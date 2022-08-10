@@ -2,7 +2,7 @@
 alpha-catan is a fun endeavour to test out deep learning techniques.
 
 I personally find Catan the most boring board game out there, most of the time I either feel helpless or crushing my opponents.
-This extremity in the get go makes it appear like an 'easy' problem to solve with DL.
+This extremity in the get go makes it appear like an 'easy' problem to solve with Deep learning.
 
 I know there are other similar repos but nothing those didn't fully satisfy me, and why not try myself?
 
