@@ -1,6 +1,6 @@
 import random
-from typing import List, Type
 import numpy as np
+import pickle
 
 
 class Catan:
@@ -16,6 +16,7 @@ class Catan:
     # }
 
     def __init__(self):
+        self.turn = 0
 
         self.knight_card = {
             "knight": 14,
@@ -342,6 +343,12 @@ class Catan:
 
                 return action, attributes
 
+            elif self.player_type == "model":
+                # model design:
+                # forward the policy network and sample an action from the returned probability
+                aprob, h = self.policy_forward(self.board)
+                action = 2 if np.random.uniform() < aprob else 3  # roll the dice!
+
         def perform_action(self, action, attributes):
 
             if action == 0:
@@ -454,50 +461,88 @@ class Catan:
             self.perform_action(action, attributes)
 
 
-resource_type = set(["brick", "lumber", "ore", "grain", "wool", "nothing"])
-
-## References
-"""
-1: ["brick", 19, 3],
-2: ["lumber", 19, 4],
-3: ["ore", 19, 3],
-4: ["grain", 19, 4],
-5: ["wool", 19, 4],
-6: ["desert", 0, 1],
-
-
-"""
-
-
-def pick_random_from_list(list_of_items):
-    non_zero_list = [item for item in list_of_items if item != 0]
-    return random.choice(non_zero_list)
-
-
 if __name__ == "__main__":
+    # hyperparameters
+    H = 200  # number of hidden layer neurons
+    batch_size = 10  # every how many episodes to do a param update?
+    learning_rate = 1e-4
+    gamma = 0.99  # discount factor for reward
+    decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
+    resume = False  # resume from previous checkpoint?
+    render = False
+
+    D = 23 * 21  # input dimensionality: 23 x 21 grid
+    model = {}
+    model["W1"] = np.random.randn(H, D) / np.sqrt(D)  # "Xavier" initialization
+
+    types_of_actions = 4
+    model["W2"] = np.random.randn(4, H) / np.sqrt(H)
+    grad_buffer = {
+        k: np.zeros_like(v) for k, v in model.items()
+    }  # update buffers that add up gradients over a batch
+    rmsprop_cache = {k: np.zeros_like(v) for k, v in model.items()}  # rmsprop memory
+
+    def softmax(arr: list):
+        # softmax probabilities
+        return [np.exp(-y) / sum([np.exp(-x) for x in arr]) for y in arr]
+
+    def prepro(I):
+        "preprocess inputs"
+        I = I[2:25, 2:23]  # crop
+        return I.astype(np.float64).ravel()
+
+    def discount_rewards(r):
+        """take 1D float array of rewards and compute discounted reward"""
+        discounted_r = np.zeros_like(r)
+        running_add = 0
+        for t in reversed(range(0, r.size)):
+            running_add = running_add * gamma + r[t]
+            discounted_r[t] = running_add
+        return discounted_r
+
+    def policy_forward(x):
+        # forward pass: Take in board state, return probability of taking action [0,1,2,3]
+        h = np.dot(model["W1"], x)
+        h[h < 0] = 0  # ReLU nonlinearity
+        arr_logp = np.dot(model["W2"], h)
+        p = softmax(arr_logp)
+
+        return (
+            p,
+            h,
+        )  # return probability of taking action [0,1,2,3], and hidden state
+
+    def policy_backward(ep_hs, ep_xs, ep_dlogp):
+        """backward pass. (eph is array of intermediate hidden states)"""
+
+        dW2 = np.dot(ep_hs.T, ep_dlogp).ravel()
+        dh = np.outer(ep_dlogp, model["W2"])
+        dh[ep_hs <= 0] = 0  # backpro prelu
+        dW1 = np.dot(dh.T, ep_xs)
+        return {"W1": dW1, "W2": dW2}
+
+    def action_filter(action_space, action):
+        # filter action based on action space
+        possible_actions = np.multiply(action_space, action)
+
+        possible_actions_list = []
+        for i in range(len(possible_actions)):
+            if possible_actions[i] != 0:
+                possible_actions_list.append((i, possible_actions[i]))
+
+        rand = np.random.uniform()
+        closest_action = min(possible_actions_list, key=lambda x: abs(x[1] - rand))
+        return closest_action[0]
+
+    xs, hs, dlogps, drs = [], [], [], []
+    running_reward = None
+    reward_sum = 0
+    episode_number = 0
 
     # Run experiment for 10 rounds
-    # examine number of turns
-    number_of_turns = []
+
     for j in range(10):
         catan = Catan()
 
-        catan.game_start()
+        # Game start
         catan.print_board()
-        i = 0
-        while catan.game_over == False:
-            i += 1
-            print(f"Turn {i}")
-
-            for player_tag, player in catan.players.items():
-                # Phase 1: roll dice and get resources
-                catan.board_turn()
-                # Phase 2: player performs actions
-                print("Player turn")
-                player.player_turn()
-                for v in player.resources.values():
-                    if v < 0:
-                        raise ValueError("Player has negative resources")
-
-        number_of_turns.append(i)
-    print(number_of_turns)
