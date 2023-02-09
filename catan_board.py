@@ -490,14 +490,6 @@ class Catan:
             return return_list
 
         def reward_matrix(self, action: int):
-            reward_matrix = {0: 0.1, 1: 1, 2: 0.5, 3: 0.25, "win": 100, "lose": -100}
-
-            # action_space = [
-            #     1,  # nothing
-            #     0,  # settlement
-            #     0,  # road
-            #     0,  # trade
-            # ]
             return reward_matrix[action]
 
         def player_turn(self):
@@ -528,15 +520,31 @@ class Catan:
 if __name__ == "__main__":
     #
     logging.basicConfig(level=20)
-    # hyperparameters
+
+    # Model_base
+    # Hyperparameters
     H = 200  # number of hidden layer neurons
     batch_size = 5  # every how many episodes to do a param update?
-    episodes = 1000
+    episodes = 100
     learning_rate = 1e-4
     gamma = 0.99  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
     resume = False  # resume from previous checkpoint?
     render = False
+
+    # Action space
+
+    # 0,  # nothing
+    # 1,  # settlement
+    # 2,  # road
+    # 3,  # trade
+
+    # 0, 0 :: Dim = 1
+    # 1, {list of all settlements} :: Dim = 2*(3+4+4+5+5+6) = 54
+    # 2, {list of all road} :: Dim = 72
+    # 3, {list of all trades} :: Dim = (4 * 5) = 20
+
+    reward_matrix = {0: 0.1, 1: 1, 2: 0.5, 3: 0.25, "win": 100, "lose": -100}
 
     D = 23 * 21  # input dimensionality: 23 x 21 grid (483)
     model = {}
@@ -623,6 +631,9 @@ if __name__ == "__main__":
     for episode in range(episodes):
         logging.info(f"Episode {episode}")
         catan = Catan()
+        logging.debug(f"number of roads {len(np.argwhere(catan.board == -1))}")
+        logging.debug(f"number of settlement {len(np.argwhere(catan.board == -2))}")
+
         catan.game_start()
         turn = 0
 
@@ -637,6 +648,7 @@ if __name__ == "__main__":
                 player.player_turn()
                 player.recalc_points()
 
+        # Definition of lose in a 1 player game
         if turn == max_turn:
             for player_tag, player in catan.players.items():
                 player.r_s[-1] -= player.reward_matrix("lose")
@@ -678,4 +690,14 @@ if __name__ == "__main__":
                     model[k] += learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
                     grad_buffer[k] = np.zeros_like(v)  # reset batch gradient buffer
 
-    plt.plot(turn_list)
+    def plot_running_avg(y: list, window=5):
+        average_y = []
+        for ind in range(len(y) - window + 1):
+            average_y.append(np.mean(y[ind : ind + window]))
+
+        plt.plot(average_y)
+        plt.show()
+
+    plot_running_avg(
+        turn_list,
+    )
