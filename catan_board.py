@@ -5,6 +5,10 @@ from matplotlib import pyplot as plt
 import logging
 
 
+def arr_to_tuple(arr: np.array):
+    return [tuple(l) for l in arr.tolist()]
+
+
 class Catan:
 
     # resource_card = {
@@ -47,25 +51,10 @@ class Catan:
 
         # Add 10 to each number to avoid clashing with resource numbers
         self.number_tokens = [
-            12,
-            13,
-            13,
-            14,
-            14,
-            15,
-            15,
-            16,
-            16,
-            18,
-            18,
-            19,
-            19,
-            20,
-            20,
-            21,
-            21,
-            22,
-            0,
+            # fmt: off
+            12,  13, 13,  14, 14,  15,  15,  16,  16,
+            18, 18,  19, 19,  20,  20,  21,  21,  22, 0,
+            # fmt: on
         ]
         self.center_coords = [
             # fmt: off
@@ -89,8 +78,30 @@ class Catan:
         # ]
 
         self.board = self.generate_board()
-        self.players = self.generate_players(1)
         self.game_over = False
+        self.all_settlement_spots = arr_to_tuple(np.argwhere(self.board == -1))
+        self.all_road_spots = arr_to_tuple(np.argwhere(self.board == -2))
+        self.all_trades = [(x, y) for x in range(1, 6) for y in range(1, 6) if x != y]
+
+        self.base_action_space = self.get_all_action_space()
+
+        self.players = self.generate_players(1)
+
+    def get_all_action_space(self):
+        action_space = {
+            0: None,  # nothing
+            1: self.all_settlement_spots,  # settlement
+            2: self.all_road_spots,  # road
+            3: self.all_trades,  # trade
+        }
+        flatten_action_space = [
+            (action_index, potential_action)
+            for action_index, potential_actions in action_space.items()
+            if potential_actions != None and action_index != 0
+            for potential_action in potential_actions
+        ]
+
+        return flatten_action_space
 
     def generate_players(self, player_count: int):
         players = {}
@@ -247,7 +258,7 @@ class Catan:
             self.settlements = []
             self.roads = []
             self.cities = []
-            self.action_space = self.get_action_space()
+            self.current_action_space = self.get_action_space()
             self.potential_settlement = []
             self.potential_road = []
             self.potential_trade = []
@@ -276,14 +287,13 @@ class Catan:
 
         def get_action_space(self):
             # leaving city and development car later
-            action_space = np.array(
-                [
-                    1,  # nothing
-                    0,  # settlement
-                    0,  # road
-                    0,  # trade
-                ]
-            )
+            action_space = {
+                0: None,  # nothing
+                1: None,  # settlement
+                2: None,  # road
+                3: None,  # trade
+            }
+
             if (
                 self.resources[1] >= 1
                 and self.resources[2] >= 1
@@ -292,12 +302,12 @@ class Catan:
             ):
                 self.potential_settlement = self.get_potential_settlement()
                 if len(self.potential_settlement) > 0:
-                    action_space[1] = 1
+                    action_space[1] = self.potential_settlement
 
             if self.resources[1] >= 1 and self.resources[2] >= 1:
                 self.potential_road = self.get_potential_road()
                 if len(self.potential_road) > 0:
-                    action_space[2] = 1
+                    action_space[2] = self.potential_road
             if (
                 self.resources[1] >= 4
                 or self.resources[2] >= 4
@@ -307,18 +317,46 @@ class Catan:
             ):
                 self.potential_trade = self.get_potential_trade()
                 if len(self.potential_trade) > 0:
-                    action_space[3] = 1
+                    action_space[3] = self.potential_trade
 
-            return action_space
+            # flatten action space
+            flatten_action_space = [
+                (action_index, potential_action)
+                for action_index, potential_actions in action_space.items()
+                if potential_actions != None and action_index != 0
+                for potential_action in potential_actions
+            ]
+
+            out_action_space = np.zeros(len(self.catan.base_action_space))
+            for idx, base_action in enumerate(self.catan.base_action_space):
+                if base_action in flatten_action_space:
+                    out_action_space[idx] = 1
+            logging.debug(out_action_space)
+            return flatten_action_space
+
+        def action_filter(self, action_space: np.array, action: np.array):
+            # filter action based on action space
+
+            possible_actions = np.multiply(action_space, action)
+
+            possible_actions_list = []
+            for i in range(len(possible_actions)):
+                if possible_actions[i] != 0:
+                    possible_actions_list.append((i, possible_actions[i]))
+
+            rand = np.random.uniform()
+            closest_action = min(possible_actions_list, key=lambda x: abs(x[1] - rand))
+            return closest_action[0]
 
         def get_potential_trade(self):
             # returns a list of tuples of the form (resource, resource)
             list_of_potential_trades = []
-            for i in range(5):
-                if self.resources[i + 1] >= 4:
-                    for j in range(5):
+
+            for i in range(1, 6):
+                if self.resources[i] >= 4:
+                    for j in range(1, 6):
                         if j != i:
-                            list_of_potential_trades.append((i + 1, j + 1))
+                            list_of_potential_trades.append((i, j))
 
             return list_of_potential_trades
 
@@ -391,19 +429,6 @@ class Catan:
 
                 return action, attributes
 
-        def action_filter(self, action_space: np.array, action: np.array):
-            # filter action based on action space
-            possible_actions = np.multiply(action_space, action)
-
-            possible_actions_list = []
-            for i in range(len(possible_actions)):
-                if possible_actions[i] != 0:
-                    possible_actions_list.append((i, possible_actions[i]))
-
-            rand = np.random.uniform()
-            closest_action = min(possible_actions_list, key=lambda x: abs(x[1] - rand))
-            return closest_action[0]
-
         def perform_action(self, action, attributes):
 
             if action == 0:
@@ -449,7 +474,7 @@ class Catan:
 
         def get_potential_settlement(self):
             if len(self.settlements) < 2:
-                return np.argwhere(self.catan.board == -1).tolist()
+                return arr_to_tuple(np.argwhere(self.catan.board == -1))
 
             potential_list = []
             for y, x in self.roads:
