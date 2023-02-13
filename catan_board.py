@@ -1,6 +1,12 @@
 import random
-from typing import List, Type
 import numpy as np
+import pickle
+from matplotlib import pyplot as plt
+import logging
+
+
+def arr_to_tuple(arr: np.array):
+    return [tuple(l) for l in arr.tolist()]
 
 
 class Catan:
@@ -16,6 +22,7 @@ class Catan:
     # }
 
     def __init__(self):
+        self.turn = 0
 
         self.knight_card = {
             "knight": 14,
@@ -44,25 +51,10 @@ class Catan:
 
         # Add 10 to each number to avoid clashing with resource numbers
         self.number_tokens = [
-            12,
-            13,
-            13,
-            14,
-            14,
-            15,
-            15,
-            16,
-            16,
-            18,
-            18,
-            19,
-            19,
-            20,
-            20,
-            21,
-            21,
-            22,
-            0,
+            # fmt: off
+            12,  13, 13,  14, 14,  15,  15,  16,  16,
+            18, 18,  19, 19,  20,  20,  21,  21,  22, 0,
+            # fmt: on
         ]
         self.center_coords = [
             # fmt: off
@@ -86,8 +78,36 @@ class Catan:
         # ]
 
         self.board = self.generate_board()
-        self.players = self.generate_players(1)
         self.game_over = False
+        self.all_settlement_spots = arr_to_tuple(np.argwhere(self.board == -1))
+        self.all_road_spots = arr_to_tuple(np.argwhere(self.board == -2))
+        self.all_trades = [(x, y) for x in range(1, 6) for y in range(1, 6) if x != y]
+
+        self.base_action_space = self.get_all_action_space()
+
+        self.players = self.generate_players(1)
+
+    def get_all_action_space(self):
+
+        # 0, 0 :: Dim = 1
+        # 1, {list of all settlements} :: Dim = 2*(3+4+4+5+5+6) = 54
+        # 2, {list of all road} :: Dim = 72
+        # 3, {list of all trades} :: Dim = (4 * 5) = 20
+        # Total dim = 147
+
+        action_space = {
+            0: [None],  # nothing
+            1: self.all_settlement_spots,  # settlement
+            2: self.all_road_spots,  # road
+            3: self.all_trades,  # trade
+        }
+        flatten_action_space = [
+            (action_index, potential_action)
+            for action_index, potential_actions in action_space.items()
+            for potential_action in potential_actions
+        ]
+
+        return flatten_action_space
 
     def generate_players(self, player_count: int):
         players = {}
@@ -97,13 +117,12 @@ class Catan:
 
     def print_board(self):
         board = self.board.copy()
-        print(board.shape)
         board = board[2 : board.shape[0] - 2, 2 : board.shape[1] - 2]
         zero_tmp = 97
         board[board == 0] = zero_tmp
         board_string = np.array2string(board)
         board_string = board_string.replace(f"{zero_tmp}", "  ")
-        print(board_string)
+        logging.info(board_string)
 
     def board_turn(self):
 
@@ -115,7 +134,7 @@ class Catan:
             # need to cut resources by half
             pass
         else:
-            print(f"Rolled: {roll}")
+            logging.debug(f"Rolled: {roll - 10}")
             self.deliver_resource(roll)
 
     def roll(self):
@@ -134,7 +153,7 @@ class Catan:
                 [y - 2, x - 2],
             ]
             resource_type = self.board[y - 2, x]
-            print(f"Resource type: {resource_type}")
+            logging.debug(f"Resource type: {resource_type}")
 
             if resource_type == 6:
                 continue
@@ -144,7 +163,9 @@ class Catan:
 
                     if player_tag != -1:
                         self.add_resource(player_tag, resource_type, 1)
-                        print(f"Player {player_tag} got resource {resource_type}")
+                        logging.debug(
+                            f"Player {player_tag} got resource {resource_type}"
+                        )
 
     def add_resource(self, player_tag, resource_type, resource_num: int):
         self.players[player_tag].resources[resource_type] += 1
@@ -156,8 +177,7 @@ class Catan:
         # Anticlockwise order
         for player_tag, player in reversed(self.players.items()):
             player.player_start()
-        self.print_board()
-        print("Game started!")
+        logging.info("Game started!")
 
     def generate_board(self):
 
@@ -224,7 +244,7 @@ class Catan:
     class Player:
         def __init__(self, catan, tag: int) -> None:
             self.catan = catan
-            self.player_type = "random_esc"
+            self.player_type = "model"
             self.tag = tag
             self.resources = {
                 # name, count, Start with 2 settlement + 2 roads
@@ -249,6 +269,16 @@ class Catan:
             self.potential_road = []
             self.potential_trade = []
             self.points = 0
+            self.x_s, self.z1_s, self.a1_s, self.z2_s, self.a2_s, self.y_s, self.r_s = (
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+            )
+            self.actions_taken = []
 
         def recalc_points(self):
             self.points = (
@@ -256,56 +286,120 @@ class Catan:
                 + 2 * len(self.cities)
                 + self.knight_cards["victory_point"]
             )
-            print(f"Player {self.tag} has {self.points} points")
+            logging.debug(f"Player {self.tag} has {self.points} points")
             if self.points >= 10:
-                print(f"Player {self.tag} wins!")
+                if self.player_type == "model":
+                    self.r_s[-1] += self.reward_matrix("win")
+                logging.info(f"Player {self.tag} wins!")
                 self.catan.game_over = True
 
-        def get_action_space(self):
-            # leaving city and development car later
-            action_space = [
-                1,  # nothing
-                0,  # settlement
-                0,  # road
-                0,  # trade
-            ]
-            if (
-                self.resources[1] >= 1
-                and self.resources[2] >= 1
-                and self.resources[4] >= 1
-                and self.resources[5] >= 1
-            ):
+        def get_action_space(self, start=None, attributes=None):
+
+            action_space_list = []
+
+            if start == "settlement":
                 self.potential_settlement = self.get_potential_settlement()
-                if len(self.potential_settlement) > 0:
-                    action_space[1] = 1
-
-            if self.resources[1] >= 1 and self.resources[2] >= 1:
+                for settlement in self.potential_settlement:
+                    action_space_list.append((1, settlement))
+            elif start == "road":
                 self.potential_road = self.get_potential_road()
-                if len(self.potential_road) > 0:
-                    action_space[2] = 1
-            if (
-                self.resources[1] >= 4
-                or self.resources[2] >= 4
-                or self.resources[3] >= 4
-                or self.resources[4] >= 4
-                or self.resources[5] >= 4
-            ):
-                self.potential_trade = self.get_potential_trade()
-                if len(self.potential_trade) > 0:
-                    action_space[3] = 1
+                for road in self.potential_road:
+                    action_space_list.append((2, road))
+            else:
+                # leaving city and development car later
+                action_space_list.append((0, None))
+                if (
+                    self.resources[1] >= 1
+                    and self.resources[2] >= 1
+                    and self.resources[4] >= 1
+                    and self.resources[5] >= 1
+                ):
+                    self.potential_settlement = self.get_potential_settlement()
 
+                    for settlement in self.potential_settlement:
+                        action_space_list.append((1, settlement))
+
+                if self.resources[1] >= 1 and self.resources[2] >= 1:
+                    self.potential_road = self.get_potential_road()
+                    for road in self.potential_road:
+                        action_space_list.append((2, road))
+                if (
+                    self.resources[1] >= 4
+                    or self.resources[2] >= 4
+                    or self.resources[3] >= 4
+                    or self.resources[4] >= 4
+                    or self.resources[5] >= 4
+                ):
+                    self.potential_trade = self.get_potential_trade()
+                    for trade in self.potential_trade:
+                        action_space_list.append((3, trade))
+
+            action_space = self.action_space_list_to_action_arr(action_space_list)
+            logging.debug(action_space)
             return action_space
+
+        def action_space_list_to_action_arr(self, action_space: list) -> np.array:
+            out_action_space = np.zeros(len(self.catan.base_action_space))
+            for idx, base_action in enumerate(self.catan.base_action_space):
+                if base_action in action_space:
+                    out_action_space[idx] = 1
+            return out_action_space
+
+        def action_arr_to_action_space_list(self, action_rr: np.array) -> list:
+            list_of_actions = np.argwhere(action_rr == 1).tolist()
+            out_action_list = [
+                self.catan.base_action_space[action_idx[0]]
+                for action_idx in list_of_actions
+            ]
+            return out_action_list
+
+        def action_idx_to_action_tuple(self, action_idx: int) -> tuple:
+            return self.catan.base_action_space[action_idx]
+
+        def action_filter(self, action_space: np.array, model_output: np.array):
+
+            # filter action based on action space
+            possible_actions_arr = np.multiply(action_space, model_output)
+
+            # possible_actions_list = []
+            # for i in range(len(possible_actions)):
+            #     if possible_actions[i] != 0:
+            #         possible_actions_list.append((i, possible_actions[i]))
+
+            # rand = np.random.uniform()
+            # closest_action = min(possible_actions_list, key=lambda x: abs(x[1] - rand))
+
+            best_action = np.argmax(possible_actions_arr)
+            return best_action
 
         def get_potential_trade(self):
             # returns a list of tuples of the form (resource, resource)
             list_of_potential_trades = []
-            for i in range(5):
-                if self.resources[i + 1] >= 4:
-                    for j in range(5):
+
+            for i in range(1, 6):
+                if self.resources[i] >= 4:
+                    for j in range(1, 6):
                         if j != i:
-                            list_of_potential_trades.append((i + 1, j + 1))
+                            list_of_potential_trades.append((i, j))
 
             return list_of_potential_trades
+
+        def prepro(self):
+            "preprocess inputs"
+            """
+                players_resources with You, next, next+1 ,next+2
+                board positions.
+            """
+            resource_arr = np.array([])
+            for player in self.catan.players.values():
+                resource_arr = np.append(
+                    resource_arr, [resource for resource in player.resources.values()]
+                )
+            # resource_arr = np.array(ordered_resource_list)
+            board = self.catan.board.ravel().astype(np.float64)
+            board = np.delete(board, np.where(board == 0))  # crop
+
+            return np.append(resource_arr, board)
 
         def pick_action(self):
             if self.player_type == "random":
@@ -327,18 +421,38 @@ class Catan:
 
             elif self.player_type == "random_esc":
                 # Prefer to build settlements and roads over trading and doing nothing
-                if self.action_space[1] == 1:
-                    action = 1
-                    attributes = random.choice(self.potential_settlement)
-                elif self.action_space[2] == 1:
-                    action = 2
-                    attributes = random.choice(self.potential_road)
-                elif self.action_space[3] == 1:
-                    action = 3
-                    attributes = random.choice(self.potential_trade)
-                elif self.action_space[0] == 1:
-                    action = 0
-                    attributes = 1
+                random_action = random.choice(
+                    self.action_arr_to_action_space_list(self.action_space)
+                )
+
+                return random_action[0], random_action[1]
+
+            elif self.player_type == "model":
+                # model design:
+                # forward the policy network and sample an action from the returned probability
+
+                x = self.prepro()  # appendboard state
+
+                z1, a1, z2, a2 = policy_forward(x)
+
+                self.x_s.append(x)
+                self.z1_s.append(z1)
+                self.a1_s.append(a1)
+                self.z2_s.append(z2)
+                self.a2_s.append(a2)
+
+                action_idx = self.action_filter(self.action_space, a2)
+
+                # Promote the action taken (which will be adjusted by the reward)
+                y = np.zeros(len(self.catan.base_action_space))
+                y[action_idx] = 1
+                self.y_s.append(y)
+
+                action, attributes = self.action_idx_to_action_tuple(action_idx)
+                self.actions_taken.append(action)
+
+                reward = self.reward_matrix(action)
+                self.r_s.append(reward)
 
                 return action, attributes
 
@@ -358,7 +472,7 @@ class Catan:
         def build_settlement(self, coords: tuple):
 
             # examing where I can build a settlement
-            print(f"Built settlement at : {coords}")
+            logging.debug(f"Built settlement at : {coords}")
             self.catan.board[coords[0], coords[1]] = self.tag
             self.settlements.append(coords)
 
@@ -369,6 +483,8 @@ class Catan:
             self.resources[5] -= 1
 
         def build_road(self, coords: tuple):
+            logging.debug(f"Built road at : {coords}")
+
             self.catan.board[coords[0], coords[1]] = self.tag
             self.roads.append(coords)
 
@@ -384,10 +500,11 @@ class Catan:
             resource_out = resource_in_resource_out[1]
             self.resources[resource_in] -= 4
             self.resources[resource_out] += 1
+            logging.debug(f"Trading {resource_in} for {resource_out}")
 
         def get_potential_settlement(self):
             if len(self.settlements) < 2:
-                return np.argwhere(self.catan.board == -1).tolist()
+                return arr_to_tuple(np.argwhere(self.catan.board == -1))
 
             potential_list = []
             for y, x in self.roads:
@@ -427,77 +544,226 @@ class Catan:
 
             return return_list
 
+        def reward_matrix(self, action: int):
+
+            reward_matrix = {
+                0: 0,
+                1: 1,
+                2: 0.2,
+                3: 0,
+                "win": 50,
+                "loss": -50,
+            }
+
+            return reward_matrix[action]
+
         def player_turn(self):
             action = None
-
             while action != 0:
                 # get action space, pick random action, perform action. Repeat until all actions are done or hits nothing action.
                 self.action_space = self.get_action_space()
                 action, attributes = self.pick_action()
-                print(f"Action: {action}, Attributes: {attributes}")
+                logging.debug(f"Action: {action}, Attributes: {attributes}")
                 self.perform_action(action, attributes)
 
-            self.recalc_points()
-
         def player_start(self):
-            # for the start we enforce the action space
-            # build settlement
-            self.action_space = [0, 1, 0, 0, 0, 0]
-            self.potential_settlement = self.get_potential_settlement()
+            # for the start we need to enforce the action space to
+            # 1. build settlement
+            self.action_space = self.get_action_space(start="settlement")
             action, attributes = self.pick_action()
             self.perform_action(action, attributes)
 
-            # build road
-            self.action_space = [0, 0, 1, 0, 0, 0]
-            self.potential_road = self.get_potential_road(attributes)
+            # 2. build road
+            self.action_space = self.get_action_space(
+                start="road", attributes=attributes
+            )
             action, attributes = self.pick_action()
             self.perform_action(action, attributes)
 
+        def player_turn_debug(self):
+            logging.debug(f"Resources: {self.resources}")
+            logging.debug(f"Points: {self.points}")
+            logging.debug(
+                f"Potential: {self.potential_settlement} {self.potential_road} {self.potential_trade}"
+            )
 
-resource_type = set(["brick", "lumber", "ore", "grain", "wool", "nothing"])
-
-## References
-"""
-1: ["brick", 19, 3],
-2: ["lumber", 19, 4],
-3: ["ore", 19, 3],
-4: ["grain", 19, 4],
-5: ["wool", 19, 4],
-6: ["desert", 0, 1],
-
-
-"""
-
-
-def pick_random_from_list(list_of_items):
-    non_zero_list = [item for item in list_of_items if item != 0]
-    return random.choice(non_zero_list)
+        def player_episode_audit(self):
+            unique, counts = np.unique(self.actions_taken, return_counts=True)
+            logging.info(f"Actions taken {dict(zip(unique, counts))}")
+            logging.info(f"Reward sum {round(np.sum(np.vstack(self.r_s)))}")
 
 
 if __name__ == "__main__":
+    #
+    logging.basicConfig(level=20)
 
-    # Run experiment for 10 rounds
-    # examine number of turns
-    number_of_turns = []
-    for j in range(10):
+    # Model_base
+    # Hyperparameters
+    H = 9192  # number of hidden layer neurons
+    batch_size = 5  # every how many episodes to do a param update?
+    episodes = 10000
+    learning_rate = 1e-5
+    gamma = 0.99  # discount factor for reward
+    decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
+    resume = False  # resume from previous checkpoint?
+    render = False
+
+    def softmax(x):
+        shiftx = x - np.max(x, axis=0)
+        exps = np.exp(shiftx)
+        return exps / np.sum(exps, axis=0)
+
+    def discount_rewards(r):
+        """take 1D float array of rewards and compute discounted reward"""
+        discounted_r = np.zeros_like(r)
+        running_add = 0
+        for t in reversed(range(0, r.size)):
+            running_add = running_add * gamma + r[t]
+            discounted_r[t] = running_add
+        return discounted_r
+
+    def relu(x):
+        x[x < 0] = 0
+        return x
+
+    def d_relu(x):
+        return x >= 0
+
+    def policy_forward(x):
+        # forward pass: Take in board state, return probability of taking action [0,1,2,3]
+        # Ne = Neurons in hidden state. As = Action Space
+        z1 = model["W1"] @ x  # Ne x 483 * 483 x M = Ne x M
+        a1 = relu(z1)  # Ne x M
+        z2 = model["W2"] @ a1  # As x Ne * Ne x M = As x M
+        a2 = softmax(z2)  # As x M
+
+        return (
+            z1,
+            a1,
+            z2,
+            a2,
+        )  # return probability of taking action [0,1,2,3], and hidden state
+
+    def policy_backward(x_s, z1_s, a1_s, z2_s, a2_s, y_s, r_s):
+
+        """backward pass. (eph is array of intermediate hidden states)"""
+        dz2 = (a2_s - y_s) * discount_rewards(
+            r_s
+        )  # based on cross entropy + softmax regulated by rewards. Dim = M x As
+
+        dW2 = dz2.T @ a1_s  # Dim = As x M * M x Ne = As x Ne
+
+        da1 = dz2 @ model["W2"]  # Dim = M x As * As x Ne = M x Ne
+        dz1 = da1 * d_relu(z1_s)  # Dim = M x Ne ** M x Ne = M x Ne
+        dW1 = dz1.T @ x_s  # Dim = Ne x M * M x 483 = Ne x 483
+
+        return {"W1": dW1, "W2": dW2}
+
+    # Stacking
+    running_reward = None
+    reward_sum = 0
+    turn_list = []
+    max_turn = 1000
+
+    catan = Catan()
+    D = len(catan.players[-9].prepro())
+    # D = 23 * 21  # input dimensionality: 23 x 21 grid (483)
+    model = {}
+    model["W1"] = np.random.randn(H, D) / np.sqrt(
+        D
+    )  # "Xavier" initialization. Dim = H x 483
+
+    types_of_actions = len(catan.get_all_action_space())
+    model["W2"] = np.random.randn(types_of_actions, H) / np.sqrt(H)  # Dim = As x Ne
+
+    grad_buffer = {
+        k: np.zeros_like(v) for k, v in model.items()
+    }  # update buffers that add up gradients over a batch
+    rmsprop_cache = {k: np.zeros_like(v) for k, v in model.items()}  # rmsprop memory
+    # Run experiment
+
+    for episode in range(episodes):
+
+        logging.info(f"Episode {episode}")
         catan = Catan()
 
         catan.game_start()
-        catan.print_board()
-        i = 0
-        while catan.game_over == False:
-            i += 1
-            print(f"Turn {i}")
+        turn = 0
+
+        while catan.game_over == False and turn < max_turn:
+            turn += 1
+            logging.debug(f"Turn {turn}")
 
             for player_tag, player in catan.players.items():
                 # Phase 1: roll dice and get resources
                 catan.board_turn()
                 # Phase 2: player performs actions
-                print("Player turn")
+                player.player_turn_debug()
                 player.player_turn()
-                for v in player.resources.values():
-                    if v < 0:
-                        raise ValueError("Player has negative resources")
+                player.recalc_points()
 
-        number_of_turns.append(i)
-    print(number_of_turns)
+        # Definition of lose in a 1 player game
+        if turn == max_turn:
+            for player_tag, player in catan.players.items():
+                if player.player_type == "model":
+                    player.r_s[-1] += player.reward_matrix("loss")
+
+        player.player_episode_audit()
+
+        logging.info(
+            f"Game finished in {turn} turns. Player has {catan.players[-9].points} points"
+        )
+        turn_list.append(turn)
+
+        for player_tag, player in catan.players.items():
+            if player.player_type == "model":
+
+                # stack together all inputs, hidden states, action gradients, and rewards for this episode
+                ep_x_s = np.vstack(player.x_s)
+                ep_z1_s = np.vstack(player.z1_s)
+                ep_z2_s = np.vstack(player.z2_s)
+                ep_a1_s = np.vstack(player.a1_s)
+                ep_a2_s = np.vstack(player.a2_s)
+                ep_y_s = np.vstack(player.y_s)
+                ep_r_s = np.vstack(player.r_s)
+
+                avg_ep_loss = (ep_a2_s - ep_y_s) / len(ep_y_s)
+
+                grad = policy_backward(
+                    ep_x_s,
+                    ep_z1_s,
+                    ep_a1_s,
+                    ep_z2_s,
+                    ep_a2_s,
+                    ep_y_s,
+                    ep_r_s,
+                )
+                for k in model:
+                    grad_buffer[k] += grad[k]  # accumulate grad over batch
+
+                # perform rmsprop parameter update every batch_size episodes
+                if episode % batch_size == 0:
+                    for k, v in model.items():
+                        g = grad_buffer[k]  # gradient
+                        rmsprop_cache[k] = (
+                            decay_rate * rmsprop_cache[k] + (1 - decay_rate) * g**2
+                        )
+                        model[k] -= (
+                            learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-7)
+                        )
+                        grad_buffer[k] = np.zeros_like(v)  # reset batch gradient buffer
+
+    # save model
+    pickle.dump(model, open("catan_model.pickle", "wb"))
+
+    def plot_running_avg(y: list, window=5):
+        average_y = []
+        for ind in range(len(y) - window + 1):
+            average_y.append(np.mean(y[ind : ind + window]))
+
+        plt.plot(average_y)
+        plt.show()
+
+    plot_running_avg(
+        turn_list,
+    )
