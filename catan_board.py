@@ -21,9 +21,9 @@ class Catan:
     #     6: ["desert", 0, 1],
     # }
 
-    def __init__(self):
+    def __init__(self, seed):
+        self.seed = seed
         self.turn = 0
-
         self.knight_card = {
             "knight": 14,
             "victory_point": 5,
@@ -49,13 +49,6 @@ class Catan:
             6: 1,  # desert
         }
 
-        # Add 10 to each number to avoid clashing with resource numbers
-        self.number_tokens = [
-            # fmt: off
-            12,  13, 13,  14, 14,  15,  15,  16,  16,
-            18, 18,  19, 19,  20,  20,  21,  21,  22, 0,
-            # fmt: on
-        ]
         self.center_coords = [
             # fmt: off
                 (5, 8),(5, 12),(5, 16),
@@ -180,13 +173,20 @@ class Catan:
         logging.info("Game started!")
 
     def generate_board(self):
-
         resource_list = [
             key for key, value in self.resource_cards.items() for x in range(value)
         ]
 
-        def randpick_and_pop(__list: list):
-            picked = random.randint(0, len(__list) - 1)
+        # Add 10 to each number to avoid clashing with resource numbers
+        number_tokens = [
+            # fmt: off
+            12,  13, 13,  14, 14,  15,  15,  16,  16,
+            18, 18,  19, 19,  20,  20,  21,  21,  22, 0,
+            # fmt: on
+        ]
+
+        def pick_and_pop(__list: list):
+            picked = 0
             value = __list[picked]
             __list.pop(picked)
             return value
@@ -232,9 +232,13 @@ class Catan:
             ]
         )
 
+        # Shuffle based on seed
+        random.Random(self.seed).shuffle(number_tokens)
+        random.Random(self.seed).shuffle(resource_list)
+
         for (y, x) in self.center_coords:
-            number = randpick_and_pop(self.number_tokens)
-            resource = randpick_and_pop(resource_list)
+            number = pick_and_pop(number_tokens)
+            resource = pick_and_pop(resource_list)
             arr[y, x] = 50  # Knight reference
             arr[y - 1, x] = resource
             arr[y + 1, x] = number
@@ -248,11 +252,11 @@ class Catan:
             self.tag = tag
             self.resources = {
                 # name, count, Start with 2 settlement + 2 roads
-                1: 4,  # brick
-                2: 4,  # lumber
+                1: 0,  # brick
+                2: 0,  # lumber
                 3: 0,  # ore
-                4: 2,  # grain
-                5: 2,  # wool
+                4: 0,  # grain
+                5: 0,  # wool
             }
             self.knight_cards = {
                 "knight": 0,
@@ -269,7 +273,19 @@ class Catan:
             self.potential_road = []
             self.potential_trade = []
             self.points = 0
-            self.x_s, self.z1_s, self.a1_s, self.z2_s, self.a2_s, self.y_s, self.r_s = (
+            (
+                self.x_s,
+                self.z1_s,
+                self.a1_s,
+                self.z2_s,
+                self.a2_s,
+                self.z3_s,
+                self.a3_s,
+                self.y_s,
+                self.r_s,
+            ) = (
+                [],
+                [],
                 [],
                 [],
                 [],
@@ -302,7 +318,7 @@ class Catan:
                 for settlement in self.potential_settlement:
                     action_space_list.append((1, settlement))
             elif start == "road":
-                self.potential_road = self.get_potential_road()
+                self.potential_road = self.get_potential_road(attributes)
                 for road in self.potential_road:
                     action_space_list.append((2, road))
             else:
@@ -433,15 +449,17 @@ class Catan:
 
                 x = self.prepro()  # appendboard state
 
-                z1, a1, z2, a2 = policy_forward(x)
+                z1, a1, z2, a2, z3, a3 = policy_forward(x, self.action_space)
 
                 self.x_s.append(x)
                 self.z1_s.append(z1)
                 self.a1_s.append(a1)
                 self.z2_s.append(z2)
                 self.a2_s.append(a2)
+                self.z3_s.append(z3)
+                self.a3_s.append(a3)
 
-                action_idx = self.action_filter(self.action_space, a2)
+                action_idx = np.random.choice(np.arange(a3.size), p=a3)
 
                 # Promote the action taken (which will be adjusted by the reward)
                 y = np.zeros(len(self.catan.base_action_space))
@@ -456,41 +474,42 @@ class Catan:
 
                 return action, attributes
 
-        def perform_action(self, action, attributes):
+        def perform_action(self, action, attributes, start=False):
 
             if action == 0:
                 pass
             elif action == 1:
-                self.build_settlement(attributes)
+                self.build_settlement(attributes, start)
             elif action == 2:
-                self.build_road(attributes)
+                self.build_road(attributes, start)
             elif action == 3:
                 self.trade_with_bank(attributes)
             else:
                 raise ValueError("action not in action space")
 
-        def build_settlement(self, coords: tuple):
+        def build_settlement(self, coords: tuple, start=False):
 
             # examing where I can build a settlement
             logging.debug(f"Built settlement at : {coords}")
             self.catan.board[coords[0], coords[1]] = self.tag
             self.settlements.append(coords)
 
-            # removing resources
-            self.resources[1] -= 1
-            self.resources[2] -= 1
-            self.resources[4] -= 1
-            self.resources[5] -= 1
+            if not start:
+                # removing resources
+                self.resources[1] -= 1
+                self.resources[2] -= 1
+                self.resources[4] -= 1
+                self.resources[5] -= 1
 
-        def build_road(self, coords: tuple):
+        def build_road(self, coords: tuple, start=False):
             logging.debug(f"Built road at : {coords}")
 
             self.catan.board[coords[0], coords[1]] = self.tag
             self.roads.append(coords)
-
-            # removing resources
-            self.resources[1] -= 1
-            self.resources[2] -= 1
+            if not start:
+                # removing resources
+                self.resources[1] -= 1
+                self.resources[2] -= 1
 
         def build_city(self, coords):
             self.catan.board[coords[0], coords[1]] = self.tag
@@ -548,11 +567,13 @@ class Catan:
 
             reward_matrix = {
                 0: 0,
-                1: 1,
-                2: 0.2,
+                1: 0,
+                2: 0,
                 3: 0,
-                "win": 50,
-                "loss": -50,
+                "win": self.points**2 - 6**2,
+                "loss": self.points**2 - 6**2,
+                # self.points
+                # self.points
             }
 
             return reward_matrix[action]
@@ -571,14 +592,14 @@ class Catan:
             # 1. build settlement
             self.action_space = self.get_action_space(start="settlement")
             action, attributes = self.pick_action()
-            self.perform_action(action, attributes)
+            self.perform_action(action, attributes, start=True)
 
             # 2. build road
             self.action_space = self.get_action_space(
                 start="road", attributes=attributes
             )
             action, attributes = self.pick_action()
-            self.perform_action(action, attributes)
+            self.perform_action(action, attributes, start=True)
 
         def player_turn_debug(self):
             logging.debug(f"Resources: {self.resources}")
@@ -590,6 +611,7 @@ class Catan:
         def player_episode_audit(self):
             unique, counts = np.unique(self.actions_taken, return_counts=True)
             logging.info(f"Actions taken {dict(zip(unique, counts))}")
+            logging.info(f"End Resources {self.resources}")
             logging.info(f"Reward sum {round(np.sum(np.vstack(self.r_s)))}")
 
 
@@ -599,18 +621,23 @@ if __name__ == "__main__":
 
     # Model_base
     # Hyperparameters
-    H = 9192  # number of hidden layer neurons
+    H = 1024  # number of hidden layer 1 neurons
+    W = 512  # number of hidden layer 2 neurons
     batch_size = 5  # every how many episodes to do a param update?
-    episodes = 10000
-    learning_rate = 1e-5
-    gamma = 0.99  # discount factor for reward
+    episodes = 5000
+    learning_rate = 5e-6
+    gamma = 0.999  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
     resume = False  # resume from previous checkpoint?
     render = False
 
     def softmax(x):
+        zero_indices = np.where(x == 0)
+
         shiftx = x - np.max(x, axis=0)
         exps = np.exp(shiftx)
+
+        exps[zero_indices] = 0
         return exps / np.sum(exps, axis=0)
 
     def discount_rewards(r):
@@ -629,43 +656,56 @@ if __name__ == "__main__":
     def d_relu(x):
         return x >= 0
 
-    def policy_forward(x):
+    def policy_forward(x, mask):
         # forward pass: Take in board state, return probability of taking action [0,1,2,3]
         # Ne = Neurons in hidden state. As = Action Space
         z1 = model["W1"] @ x  # Ne x 483 * 483 x M = Ne x M
         a1 = relu(z1)  # Ne x M
-        z2 = model["W2"] @ a1  # As x Ne * Ne x M = As x M
-        a2 = softmax(z2)  # As x M
+
+        z2 = model["W2"] @ a1  # Ne x 483 * 483 x M = Ne x M
+        a2 = relu(z2)  # Ne x M
+
+        z3 = model["W3"] @ a2  # As x Ne * Ne x M = As x M
+        m3 = np.multiply(z3, mask)
+        a3 = softmax(m3)  # As x M
 
         return (
             z1,
             a1,
             z2,
             a2,
+            z3,
+            a3,
         )  # return probability of taking action [0,1,2,3], and hidden state
 
-    def policy_backward(x_s, z1_s, a1_s, z2_s, a2_s, y_s, r_s):
+    def policy_backward(x_s, z1_s, a1_s, z2_s, a2_s, z3_s, a3_s, y_s, r_s):
 
         """backward pass. (eph is array of intermediate hidden states)"""
-        dz2 = (a2_s - y_s) * discount_rewards(
+        dz3 = (a3_s - y_s) * discount_rewards(
             r_s
         )  # based on cross entropy + softmax regulated by rewards. Dim = M x As
 
+        dW3 = dz3.T @ a2_s
+
+        da2 = dz3 @ model["W3"]  # Dim = M x As * As x Ne = M x Ne
+        dz2 = da2 * d_relu(z2_s)  # Dim = M x Ne ** M x Ne = M x Ne
         dW2 = dz2.T @ a1_s  # Dim = As x M * M x Ne = As x Ne
 
         da1 = dz2 @ model["W2"]  # Dim = M x As * As x Ne = M x Ne
         dz1 = da1 * d_relu(z1_s)  # Dim = M x Ne ** M x Ne = M x Ne
         dW1 = dz1.T @ x_s  # Dim = Ne x M * M x 483 = Ne x 483
 
-        return {"W1": dW1, "W2": dW2}
+        return {"W1": dW1, "W2": dW2, "W3": dW3}
 
     # Stacking
     running_reward = None
     reward_sum = 0
     turn_list = []
-    max_turn = 1000
+    max_turn = 500
 
-    catan = Catan()
+    # create dummy catan game to get action spaces
+    catan = Catan(seed=1)
+
     D = len(catan.players[-9].prepro())
     # D = 23 * 21  # input dimensionality: 23 x 21 grid (483)
     model = {}
@@ -674,7 +714,9 @@ if __name__ == "__main__":
     )  # "Xavier" initialization. Dim = H x 483
 
     types_of_actions = len(catan.get_all_action_space())
-    model["W2"] = np.random.randn(types_of_actions, H) / np.sqrt(H)  # Dim = As x Ne
+    model["W2"] = np.random.randn(W, H) / np.sqrt(H)  # Dim = As x Ne
+
+    model["W3"] = np.random.randn(types_of_actions, W) / np.sqrt(W)  # Dim = As x Ne
 
     grad_buffer = {
         k: np.zeros_like(v) for k, v in model.items()
@@ -685,7 +727,7 @@ if __name__ == "__main__":
     for episode in range(episodes):
 
         logging.info(f"Episode {episode}")
-        catan = Catan()
+        catan = Catan(seed=1)
 
         catan.game_start()
         turn = 0
@@ -702,13 +744,14 @@ if __name__ == "__main__":
                 player.player_turn()
                 player.recalc_points()
 
-        # Definition of lose in a 1 player game
-        if turn == max_turn:
-            for player_tag, player in catan.players.items():
+        # Episode Audit
+        for player_tag, player in catan.players.items():
+
+            if turn == max_turn:
                 if player.player_type == "model":
                     player.r_s[-1] += player.reward_matrix("loss")
 
-        player.player_episode_audit()
+            player.player_episode_audit()
 
         logging.info(
             f"Game finished in {turn} turns. Player has {catan.players[-9].points} points"
@@ -721,13 +764,15 @@ if __name__ == "__main__":
                 # stack together all inputs, hidden states, action gradients, and rewards for this episode
                 ep_x_s = np.vstack(player.x_s)
                 ep_z1_s = np.vstack(player.z1_s)
-                ep_z2_s = np.vstack(player.z2_s)
                 ep_a1_s = np.vstack(player.a1_s)
+                ep_z2_s = np.vstack(player.z2_s)
                 ep_a2_s = np.vstack(player.a2_s)
+                ep_z3_s = np.vstack(player.z3_s)
+                ep_a3_s = np.vstack(player.a3_s)
                 ep_y_s = np.vstack(player.y_s)
                 ep_r_s = np.vstack(player.r_s)
 
-                avg_ep_loss = (ep_a2_s - ep_y_s) / len(ep_y_s)
+                avg_ep_loss = (ep_a3_s - ep_y_s) / len(ep_y_s)
 
                 grad = policy_backward(
                     ep_x_s,
@@ -735,6 +780,8 @@ if __name__ == "__main__":
                     ep_a1_s,
                     ep_z2_s,
                     ep_a2_s,
+                    ep_z3_s,
+                    ep_a3_s,
                     ep_y_s,
                     ep_r_s,
                 )
