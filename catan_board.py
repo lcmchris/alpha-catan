@@ -21,7 +21,7 @@ class Catan:
     #     6: ["desert", 0, 1],
     # }
 
-    def __init__(self, seed):
+    def __init__(self, seed, player_type):
         self.seed = seed
         self.turn = 0
         self.knight_card = {
@@ -78,7 +78,7 @@ class Catan:
 
         self.base_action_space = self.get_all_action_space()
 
-        self.players = self.generate_players(1)
+        self.players = self.generate_players(1, player_type)
 
     def get_all_action_space(self):
 
@@ -102,10 +102,10 @@ class Catan:
 
         return flatten_action_space
 
-    def generate_players(self, player_count: int):
+    def generate_players(self, player_count: int, player_type: str):
         players = {}
         for i in range(1, player_count + 1):
-            players[i - 10] = Catan.Player(self, i - 10)
+            players[i - 10] = Catan.Player(self, i - 10, player_type)
         return players
 
     def print_board(self):
@@ -199,7 +199,7 @@ class Catan:
         """
         arr = np.array(
             [
-                # The extra padding is to make sure the validation works
+                # The extra padding is to make sure the validation works for delivering resources.
                 # fmt: off
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -246,9 +246,9 @@ class Catan:
         return arr
 
     class Player:
-        def __init__(self, catan, tag: int) -> None:
+        def __init__(self, catan, tag: int, player_type: str) -> None:
             self.catan = catan
-            self.player_type = "model"
+            self.player_type = player_type
             self.tag = tag
             self.resources = {
                 # name, count, Start with 2 settlement + 2 roads
@@ -295,6 +295,7 @@ class Catan:
                 [],
             )
             self.actions_taken = []
+            self.reward_sum = 0
 
         def recalc_points(self):
             self.points = (
@@ -304,8 +305,7 @@ class Catan:
             )
             logging.debug(f"Player {self.tag} has {self.points} points")
             if self.points >= 10:
-                if self.player_type == "model":
-                    self.r_s[-1] += self.reward_matrix("win")
+                self.r_s[-1] += self.reward_matrix("win")
                 logging.info(f"Player {self.tag} wins!")
                 self.catan.game_over = True
 
@@ -419,29 +419,14 @@ class Catan:
 
         def pick_action(self):
             if self.player_type == "random":
-                # Pure random actions
-                potential_actions = []
-                for i in range(len(self.action_space)):
-                    if self.action_space[i] == 1:
-                        potential_actions.append(i)
-                action = random.choice(potential_actions)
-                if action == 0:
-                    attributes = None
-                elif action == 1:
-                    attributes = random.choice(self.potential_settlement)
-                elif action == 2:
-                    attributes = random.choice(self.potential_road)
-                elif action == 3:
-                    attributes = random.choice(self.potential_trade)
-                return action, attributes
-
-            elif self.player_type == "random_esc":
                 # Prefer to build settlements and roads over trading and doing nothing
-                random_action = random.choice(
+                action, attributes = random.choice(
                     self.action_arr_to_action_space_list(self.action_space)
                 )
+                reward = self.reward_matrix(action)
+                self.r_s.append(reward)
 
-                return random_action[0], random_action[1]
+                return action, attributes
 
             elif self.player_type == "model":
                 # model design:
@@ -570,7 +555,7 @@ class Catan:
                 1: 0,
                 2: 0,
                 3: 0,
-                "win": self.points**2 - 6**2,
+                "win": (self.points**2 - 6**2) + 2000 * (1 / (catan.turn + 1)),
                 "loss": self.points**2 - 6**2,
                 # self.points
                 # self.points
@@ -612,22 +597,26 @@ class Catan:
             unique, counts = np.unique(self.actions_taken, return_counts=True)
             logging.info(f"Actions taken {dict(zip(unique, counts))}")
             logging.info(f"End Resources {self.resources}")
-            logging.info(f"Reward sum {round(np.sum(np.vstack(self.r_s)))}")
+            self.reward_sum = round(np.sum(np.vstack(self.r_s)))
+            logging.info(f"Reward sum {self.reward_sum}")
 
 
 if __name__ == "__main__":
     #
-    logging.basicConfig(level=20)
+    logging.basicConfig(format="%(message)s", level=20)
 
     # Model_base
     # Hyperparameters
     H = 1024  # number of hidden layer 1 neurons
     W = 512  # number of hidden layer 2 neurons
     batch_size = 5  # every how many episodes to do a param update?
-    episodes = 5000
-    learning_rate = 5e-6
-    gamma = 0.999  # discount factor for reward
+    episodes = 1000
+    learning_rate = 1e-5
+    gamma = 0.99  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
+    max_turn = 500
+    player_type = "model"  # model | random
+
     resume = False  # resume from previous checkpoint?
     render = False
 
@@ -697,14 +686,21 @@ if __name__ == "__main__":
 
         return {"W1": dW1, "W2": dW2, "W3": dW3}
 
+    def plot_running_avg(y: list, window=10):
+        average_y = []
+        for ind in range(len(y) - window + 1):
+            average_y.append(np.mean(y[ind : ind + window]))
+
+        plt.plot(average_y)
+        plt.show()
+
     # Stacking
     running_reward = None
-    reward_sum = 0
     turn_list = []
-    max_turn = 500
+    reward_list = []
 
     # create dummy catan game to get action spaces
-    catan = Catan(seed=1)
+    catan = Catan(seed=1, player_type=player_type)
 
     D = len(catan.players[-9].prepro())
     # D = 23 * 21  # input dimensionality: 23 x 21 grid (483)
@@ -722,19 +718,18 @@ if __name__ == "__main__":
         k: np.zeros_like(v) for k, v in model.items()
     }  # update buffers that add up gradients over a batch
     rmsprop_cache = {k: np.zeros_like(v) for k, v in model.items()}  # rmsprop memory
-    # Run experiment
 
+    # Run experiment
     for episode in range(episodes):
 
         logging.info(f"Episode {episode}")
-        catan = Catan(seed=1)
+        catan = Catan(seed=1, player_type=player_type)
 
         catan.game_start()
-        turn = 0
 
-        while catan.game_over == False and turn < max_turn:
-            turn += 1
-            logging.debug(f"Turn {turn}")
+        while catan.game_over == False and catan.turn < max_turn:
+            catan.turn += 1
+            logging.debug(f"Turn {catan.turn}")
 
             for player_tag, player in catan.players.items():
                 # Phase 1: roll dice and get resources
@@ -747,16 +742,16 @@ if __name__ == "__main__":
         # Episode Audit
         for player_tag, player in catan.players.items():
 
-            if turn == max_turn:
-                if player.player_type == "model":
-                    player.r_s[-1] += player.reward_matrix("loss")
+            if catan.turn == max_turn:
+                player.r_s[-1] += player.reward_matrix("loss")
 
             player.player_episode_audit()
 
         logging.info(
-            f"Game finished in {turn} turns. Player has {catan.players[-9].points} points"
+            f"Game finished in {catan.turn} turns. Player has {catan.players[-9].points} points"
         )
-        turn_list.append(turn)
+        turn_list.append(catan.turn)
+        reward_list.append(player.reward_sum)
 
         for player_tag, player in catan.players.items():
             if player.player_type == "model":
@@ -803,14 +798,5 @@ if __name__ == "__main__":
     # save model
     pickle.dump(model, open("catan_model.pickle", "wb"))
 
-    def plot_running_avg(y: list, window=5):
-        average_y = []
-        for ind in range(len(y) - window + 1):
-            average_y.append(np.mean(y[ind : ind + window]))
-
-        plt.plot(average_y)
-        plt.show()
-
-    plot_running_avg(
-        turn_list,
-    )
+    plot_running_avg(turn_list)
+    plot_running_avg(reward_list)
