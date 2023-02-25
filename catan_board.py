@@ -111,7 +111,7 @@ class Catan:
             players[i - 9] = Catan.Player(self, i - 9, player_type[i])
         return players
 
-    def print_board(self):
+    def print_board(self, debug=True):
         board = self.board.copy()
         board = board[2 : board.shape[0] - 2, 2 : board.shape[1] - 2]
         zero_tmp = 97
@@ -125,7 +125,7 @@ class Catan:
 
         board_string = np.array2string(board)
         board_string = board_string.replace(f"{zero_tmp}", "  ")
-        logging.info(board_string)
+        logging.debug(board_string) if debug else logging.info(board_string)
 
     def board_turn(self):
 
@@ -325,11 +325,14 @@ class Catan:
             return a list of actions that the player can take
             """
             action_space_list = []
-            self.potential_settlement = self.get_potential_settlement()
-            self.potential_road = self.get_potential_road()
-            self.potential_trade = self.get_potential_trade()
+            if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+                # only calculate potential actions if debug mode is on
+                self.potential_settlement = self.get_potential_settlement()
+                self.potential_road = self.get_potential_road()
+                self.potential_trade = self.get_potential_trade()
 
             if start == "settlement":
+                self.potential_settlement = self.get_potential_settlement()
                 for settlement in self.potential_settlement:
                     action_space_list.append((1, settlement))
             elif start == "road":
@@ -350,6 +353,7 @@ class Catan:
                         action_space_list.append((1, settlement))
 
                 if self.resources[1] >= 1 and self.resources[2] >= 1:
+                    self.potential_road = self.get_potential_road()
                     for road in self.potential_road:
                         action_space_list.append((2, road))
                 if (
@@ -359,6 +363,7 @@ class Catan:
                     or self.resources[4] >= 4
                     or self.resources[5] >= 4
                 ):
+                    self.potential_trade = self.get_potential_trade()
                     for trade in self.potential_trade:
                         action_space_list.append((3, trade))
 
@@ -549,14 +554,14 @@ class Catan:
                     (y - 2, x + 2),
                     (y + 2, x - 2),
                     (y - 2, x - 2),
-                    (y - 1, x),
-                    (y + 1, x),
+                    (y - 2, x),
+                    (y + 2, x),
                 ]
                 for _y, _x in nearby_settlemts:
                     if self.catan.board[_y, _x] in self.catan.player_tags:
                         remove_list.append((y, x))
                         break
-                        
+
             for y, x in remove_list:
                 return_list.remove((y, x))
 
@@ -630,6 +635,8 @@ class Catan:
 
         def player_start(self):
             # for the start we need to enforce the action space to
+            logging.debug(f"<-- Player {self.tag} -->")
+
             # 1. build settlement
             self.action_space = self.get_action_space(start="settlement")
             action, attributes = self.pick_action()
@@ -642,8 +649,12 @@ class Catan:
             action, attributes = self.pick_action()
             self.perform_action(action, attributes, start=True)
 
-        def player_turn_debug(self):
+        def player_preturn_debug(self):
             logging.debug(f"<-- Player {self.tag} -->")
+
+        def player_posturn_debug(self):
+            self.catan.print_board()
+            # logging.debug(f"<-- Player {self.tag} -->")
             logging.debug(f"Resources: {self.resources}")
             logging.debug(f"Points: {self.points}")
             logging.debug(
@@ -663,7 +674,13 @@ class Catan:
 
 if __name__ == "__main__":
     #
-    logging.basicConfig(format="%(message)s", level=20)
+    logname = "catan_game.txt"
+    logging.basicConfig(
+        format="%(message)s",
+        level=20,
+        # filename=logname,
+        # filemode="w",
+    )
 
     # Model_base
     # Hyperparameters
@@ -798,12 +815,13 @@ if __name__ == "__main__":
                 # Phase 1: roll dice and get resources
                 catan.board_turn()
                 # Phase 2: player performs actions
-                player.player_turn_debug()
+                player.player_preturn_debug()
                 player.player_turn()
                 player.recalc_points()
+                player.player_posturn_debug()
 
         logging.info(f"End board state:")
-        catan.print_board()
+        catan.print_board(debug=False)
 
         # Episode Audit
         for player_tag, player in catan.players.items():
