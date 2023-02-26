@@ -21,8 +21,9 @@ class Catan:
     #     6: ["desert", 0, 1],
     # }
 
-    def __init__(self, seed, player_type):
+    def __init__(self, seed: int, player_type: list, player_count: int, mode=str):
         self.seed = seed
+        self.mode = mode
         self.turn = 0
         self.knight_card = {
             "knight": 14,
@@ -72,13 +73,16 @@ class Catan:
 
         self.board = self.generate_board()
         self.game_over = False
+        self.winner = None
         self.all_settlement_spots = arr_to_tuple(np.argwhere(self.board == -1))
         self.all_road_spots = arr_to_tuple(np.argwhere(self.board == -2))
         self.all_trades = [(x, y) for x in range(1, 6) for y in range(1, 6) if x != y]
 
         self.base_action_space = self.get_all_action_space()
-
-        self.players = self.generate_players(1, player_type)
+        self.player_tags = [i - 9 for i in range(player_count)]
+        self.players = self.generate_players(
+            player_count=player_count, player_type=player_type, mode=mode
+        )
 
     def get_all_action_space(self):
 
@@ -102,20 +106,29 @@ class Catan:
 
         return flatten_action_space
 
-    def generate_players(self, player_count: int, player_type: str):
+    def generate_players(self, player_count: int, player_type: str, mode: str):
         players = {}
-        for i in range(1, player_count + 1):
-            players[i - 10] = Catan.Player(self, i - 10, player_type)
+        for i in range(player_count):
+            players[i - 9] = Catan.Player(
+                self, tag=i - 9, player_type=player_type[i], mode=mode
+            )
         return players
 
-    def print_board(self):
+    def print_board(self, debug=True):
         board = self.board.copy()
         board = board[2 : board.shape[0] - 2, 2 : board.shape[1] - 2]
         zero_tmp = 97
         board[board == 0] = zero_tmp
+        board[board == 50] = zero_tmp
+        for i in range(12, 22 + 1):
+            board[board == i] = i - 10
+
+        board = np.insert(board, 0, np.arange(2, board.shape[1] + 2), axis=0)
+        board = np.insert(board, 0, np.arange(1, board.shape[0] + 1), axis=1)
+
         board_string = np.array2string(board)
         board_string = board_string.replace(f"{zero_tmp}", "  ")
-        logging.info(board_string)
+        logging.debug(board_string) if debug else logging.info(board_string)
 
     def board_turn(self):
 
@@ -246,10 +259,11 @@ class Catan:
         return arr
 
     class Player:
-        def __init__(self, catan, tag: int, player_type: str) -> None:
+        def __init__(self, catan, tag: int, player_type: str, mode: str) -> None:
             self.catan = catan
             self.player_type = player_type
             self.tag = tag
+            self.mode = mode
             self.resources = {
                 # name, count, Start with 2 settlement + 2 roads
                 1: 0,  # brick
@@ -268,7 +282,7 @@ class Catan:
             self.settlements = []
             self.roads = []
             self.cities = []
-            self.action_space = self.get_action_space()
+            self.action_space = None
             self.potential_settlement = []
             self.potential_road = []
             self.potential_trade = []
@@ -306,12 +320,27 @@ class Catan:
             logging.debug(f"Player {self.tag} has {self.points} points")
             if self.points >= 10:
                 self.r_s[-1] += self.reward_matrix("win")
+
+                # give other players a negative reward
+                for tag, player in catan.players.items():
+                    if tag != self.tag:
+                        player.r_s[-1] += self.reward_matrix("loss")
+
                 logging.info(f"Player {self.tag} wins!")
+
                 self.catan.game_over = True
+                self.catan.winner = self.tag
 
         def get_action_space(self, start=None, attributes=None):
-
+            """
+            return a list of actions that the player can take
+            """
             action_space_list = []
+            if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+                # only calculate potential actions if debug mode is on
+                self.potential_settlement = self.get_potential_settlement()
+                self.potential_road = self.get_potential_road()
+                self.potential_trade = self.get_potential_trade()
 
             if start == "settlement":
                 self.potential_settlement = self.get_potential_settlement()
@@ -331,7 +360,6 @@ class Catan:
                     and self.resources[5] >= 1
                 ):
                     self.potential_settlement = self.get_potential_settlement()
-
                     for settlement in self.potential_settlement:
                         action_space_list.append((1, settlement))
 
@@ -475,7 +503,10 @@ class Catan:
         def build_settlement(self, coords: tuple, start=False):
 
             # examing where I can build a settlement
+            assert coords not in self.settlements, "Building in the same spot!"
+
             logging.debug(f"Built settlement at : {coords}")
+
             self.catan.board[coords[0], coords[1]] = self.tag
             self.settlements.append(coords)
 
@@ -487,6 +518,9 @@ class Catan:
                 self.resources[5] -= 1
 
         def build_road(self, coords: tuple, start=False):
+
+            assert coords not in self.roads, "Building in the same spot!"
+
             logging.debug(f"Built road at : {coords}")
 
             self.catan.board[coords[0], coords[1]] = self.tag
@@ -497,7 +531,15 @@ class Catan:
                 self.resources[2] -= 1
 
         def build_city(self, coords):
+            assert coords not in self.cities, "Building in the same spot!"
+
+            logging.debug(f"Built city at : {coords}")
+
             self.catan.board[coords[0], coords[1]] = self.tag
+            self.cities.append(coords)
+
+            self.resources[3] -= 3
+            self.resources[4] -= 2
 
         def trade_with_bank(self, resource_in_resource_out):
             resource_in = resource_in_resource_out[0]
@@ -507,61 +549,121 @@ class Catan:
             logging.debug(f"Trading {resource_in} for {resource_out}")
 
         def get_potential_settlement(self):
+            """
+            Returns a list of tuples of the form (y, x) of all potential settlements
+            """
             if len(self.settlements) < 2:
-                return arr_to_tuple(np.argwhere(self.catan.board == -1))
+                # All empty spaces are potential settlements at the start of the game
+                return_list = arr_to_tuple(np.argwhere(self.catan.board == -1))
+            else:
+                # Find all potential settlements based on existing roads
+                return_list = []
+                for y, x in self.roads:
+                    potential_list = [
+                        (y + 1, x + 1),
+                        (y - 1, x + 1),
+                        (y + 1, x - 1),
+                        (y - 1, x - 1),
+                        (y - 1, x),
+                        (y + 1, x),
+                    ]
+                    for _y, _x in potential_list:
+                        if self.catan.board[_y, _x] == -1:
+                            return_list.append((_y, _x))
 
-            potential_list = []
-            for y, x in self.roads:
-                potential_list.append((y + 1, x + 1))
-                potential_list.append((y - 1, x + 1))
-                potential_list.append((y + 1, x - 1))
-                potential_list.append((y - 1, x - 1))
-                potential_list.append((y - 1, x))
-                potential_list.append((y + 1, x))
-            return_list = []
-            for y, x in potential_list:
-                if self.catan.board[y, x] == -1:
-                    return_list.append((y, x))
+            # Remove all settlements that are too close to other settlements
+            remove_list = []
+            for y, x in return_list:
+                nearby_settlemts = [
+                    (y + 2, x + 2),
+                    (y - 2, x + 2),
+                    (y + 2, x - 2),
+                    (y - 2, x - 2),
+                    (y - 2, x),
+                    (y + 2, x),
+                ]
+                for _y, _x in nearby_settlemts:
+                    if self.catan.board[_y, _x] in self.catan.player_tags:
+                        remove_list.append((y, x))
+                        break
+
+            for y, x in remove_list:
+                return_list.remove((y, x))
 
             return return_list
 
         def get_potential_road(self, coords=None):
-            if coords != None:
-                # This only applies to the start of the game where the road has to link to a settlement
-                act_settlements = [coords]
-            else:
-                act_settlements = self.settlements
+            # This only applies to the start of the game where the road has to link to a settlement
+            act_settlements = (
+                [coords] if coords != None and len(self.roads) < 2 else self.settlements
+            )
 
-            potential_list = []
+            # Find all potential roads based on settlements
+            return_list_sett = []
             for y, x in act_settlements:
-                potential_list.append((y + 1, x))
-                potential_list.append((y - 1, x))
-                potential_list.append((y + 1, x + 1))
-                potential_list.append((y - 1, x - 1))
-                potential_list.append((y + 1, x - 1))
-                potential_list.append((y - 1, x + 1))
+                potential_list = [
+                    (y + 1, x),
+                    (y - 1, x),
+                    (y + 1, x + 1),
+                    (y - 1, x - 1),
+                    (y + 1, x - 1),
+                    (y - 1, x + 1),
+                ]
+                for _y, _x in potential_list:
+                    if self.catan.board[_y, _x] == -2:
+                        return_list_sett.append((_y, _x))
 
-            return_list = []
-            for y, x in potential_list:
-                if self.catan.board[y, x] == -2:
-                    return_list.append((y, x))
+            # Find all potential roads based on roads
+            return_list_road = []
+            if coords == None:
+                for y, x in self.roads:
+                    potential_list = [
+                        [y, x + 2, [(y + 1, x + 1), (y - 1, x + 1)]],
+                        [y, x - 2, [(y + 1, x - 1), (y - 1, x - 1)]],
+                        [y + 2, x + 1, [(y + 1, x + 1), (y + 1, x)]],
+                        [y - 2, x + 1, [(y - 1, x + 1), (y - 1, x)]],
+                        [y + 2, x - 1, [(y + 1, x - 1), (y + 1, x)]],
+                        [y - 2, x - 1, [(y - 1, x - 1), (y - 1, x)]],
+                    ]
 
-            return return_list
+                    for _y, _x, blocking in potential_list:
+                        if (
+                            self.catan.board[_y, _x] == -2
+                            and (_y, _x) not in return_list_sett
+                        ):
+                            for _y2, _x2 in blocking:
+                                if (
+                                    self.catan.board[_y2, _x2]
+                                    not in self.catan.player_tags
+                                ):
+                                    return_list_road.append((_y, _x))
+
+            return return_list_sett + return_list_road
 
         def reward_matrix(self, action: int):
 
             reward_matrix = {
-                0: 0,
-                1: 0,
-                2: 0,
-                3: 0,
-                "win": (self.points**2 - 6**2) + 2000 * (1 / (catan.turn + 1)),
-                "loss": self.points**2 - 6**2,
-                # self.points
-                # self.points
+                "solo": {
+                    0: 0,
+                    1: 0,
+                    2: 0,
+                    3: 0,
+                    "win": (self.points**2 - 6**2) + 2000 * (1 / (catan.turn + 1)),
+                    "loss": self.points**2 - 6**2,
+                    # self.points
+                    # self.points
+                },
+                "multi": {
+                    0: 0,
+                    1: 0,
+                    2: 0,
+                    3: 0,
+                    "win": 100,
+                    "loss": -100,
+                },
             }
 
-            return reward_matrix[action]
+            return reward_matrix[self.mode][action]
 
         def player_turn(self):
             action = None
@@ -574,6 +676,8 @@ class Catan:
 
         def player_start(self):
             # for the start we need to enforce the action space to
+            logging.debug(f"<-- Player {self.tag} -->")
+
             # 1. build settlement
             self.action_space = self.get_action_space(start="settlement")
             action, attributes = self.pick_action()
@@ -586,7 +690,12 @@ class Catan:
             action, attributes = self.pick_action()
             self.perform_action(action, attributes, start=True)
 
-        def player_turn_debug(self):
+        def player_preturn_debug(self):
+            logging.debug(f"<-- Player {self.tag} -->")
+
+        def player_posturn_debug(self):
+            self.catan.print_board()
+            # logging.debug(f"<-- Player {self.tag} -->")
             logging.debug(f"Resources: {self.resources}")
             logging.debug(f"Points: {self.points}")
             logging.debug(
@@ -595,27 +704,39 @@ class Catan:
 
         def player_episode_audit(self):
             unique, counts = np.unique(self.actions_taken, return_counts=True)
-            logging.info(f"Actions taken {dict(zip(unique, counts))}")
-            logging.info(f"End Resources {self.resources}")
+            logging.info(f"<-- Player {self.tag} -->")
+            logging.info(f"Actions taken: {dict(zip(unique, counts))}")
+            logging.info(f"Settlements : {self.settlements}")
+            logging.info(f"Roads : {self.roads}")
+            logging.info(f"End Resources: {self.resources}")
             self.reward_sum = round(np.sum(np.vstack(self.r_s)))
-            logging.info(f"Reward sum {self.reward_sum}")
+            logging.info(f"Reward sum: {self.reward_sum}")
+
+            logging.info(f"Points: {self.points} ")
 
 
 if __name__ == "__main__":
     #
-    logging.basicConfig(format="%(message)s", level=20)
+    logname = "catan_game.txt"
+    logging.basicConfig(
+        format="%(message)s",
+        level=20,
+        # filename=logname,
+        # filemode="w",
+    )
 
     # Model_base
     # Hyperparameters
-    H = 1024  # number of hidden layer 1 neurons
-    W = 512  # number of hidden layer 2 neurons
+    H = 2048  # number of hidden layer 1 neurons
+    W = 1024  # number of hidden layer 2 neurons
     batch_size = 5  # every how many episodes to do a param update?
     episodes = 1000
     learning_rate = 1e-5
     gamma = 0.99  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
     max_turn = 500
-    player_type = "model"  # model | random
+    player_type = ["model", "model"]  # model | random
+    player_count = 2  # 1 - 4
 
     resume = False  # resume from previous checkpoint?
     render = False
@@ -700,9 +821,11 @@ if __name__ == "__main__":
     reward_list = []
 
     # create dummy catan game to get action spaces
-    catan = Catan(seed=1, player_type=player_type)
+    catan = Catan(seed=1, player_type=player_type, player_count=player_count)
 
-    D = len(catan.players[-9].prepro())
+    D = len(
+        next(iter(catan.players.values())).prepro()
+    )  # sum([len(player.prepro()) for key, player in catan.players.items()])
     # D = 23 * 21  # input dimensionality: 23 x 21 grid (483)
     model = {}
     model["W1"] = np.random.randn(H, D) / np.sqrt(
@@ -723,7 +846,9 @@ if __name__ == "__main__":
     for episode in range(episodes):
 
         logging.info(f"Episode {episode}")
-        catan = Catan(seed=1, player_type=player_type)
+        catan = Catan(
+            seed=1, player_type=player_type, player_count=player_count, mode="multi"
+        )
 
         catan.game_start()
 
@@ -735,9 +860,13 @@ if __name__ == "__main__":
                 # Phase 1: roll dice and get resources
                 catan.board_turn()
                 # Phase 2: player performs actions
-                player.player_turn_debug()
+                player.player_preturn_debug()
                 player.player_turn()
                 player.recalc_points()
+                player.player_posturn_debug()
+
+        logging.info(f"End board state:")
+        catan.print_board(debug=False)
 
         # Episode Audit
         for player_tag, player in catan.players.items():
@@ -747,9 +876,7 @@ if __name__ == "__main__":
 
             player.player_episode_audit()
 
-        logging.info(
-            f"Game finished in {catan.turn} turns. Player has {catan.players[-9].points} points"
-        )
+        logging.info(f"Game finished in {catan.turn} turns. Winner: {catan.winner}")
         turn_list.append(catan.turn)
         reward_list.append(player.reward_sum)
 
