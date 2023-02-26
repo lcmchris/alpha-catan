@@ -21,8 +21,9 @@ class Catan:
     #     6: ["desert", 0, 1],
     # }
 
-    def __init__(self, seed: int, player_type: list, player_count: int):
+    def __init__(self, seed: int, player_type: list, player_count: int, mode=str):
         self.seed = seed
+        self.mode = mode
         self.turn = 0
         self.knight_card = {
             "knight": 14,
@@ -80,7 +81,7 @@ class Catan:
         self.base_action_space = self.get_all_action_space()
         self.player_tags = [i - 9 for i in range(player_count)]
         self.players = self.generate_players(
-            player_count=player_count, player_type=player_type
+            player_count=player_count, player_type=player_type, mode=mode
         )
 
     def get_all_action_space(self):
@@ -105,10 +106,12 @@ class Catan:
 
         return flatten_action_space
 
-    def generate_players(self, player_count: int, player_type: str):
+    def generate_players(self, player_count: int, player_type: str, mode: str):
         players = {}
         for i in range(player_count):
-            players[i - 9] = Catan.Player(self, i - 9, player_type[i])
+            players[i - 9] = Catan.Player(
+                self, tag=i - 9, player_type=player_type[i], mode=mode
+            )
         return players
 
     def print_board(self, debug=True):
@@ -256,10 +259,11 @@ class Catan:
         return arr
 
     class Player:
-        def __init__(self, catan, tag: int, player_type: str) -> None:
+        def __init__(self, catan, tag: int, player_type: str, mode: str) -> None:
             self.catan = catan
             self.player_type = player_type
             self.tag = tag
+            self.mode = mode
             self.resources = {
                 # name, count, Start with 2 settlement + 2 roads
                 1: 0,  # brick
@@ -316,7 +320,14 @@ class Catan:
             logging.debug(f"Player {self.tag} has {self.points} points")
             if self.points >= 10:
                 self.r_s[-1] += self.reward_matrix("win")
+
+                # give other players a negative reward
+                for tag, player in catan.players.items():
+                    if tag != self.tag:
+                        player.r_s[-1] += self.reward_matrix("loss")
+
                 logging.info(f"Player {self.tag} wins!")
+
                 self.catan.game_over = True
                 self.catan.winner = self.tag
 
@@ -348,7 +359,7 @@ class Catan:
                     and self.resources[4] >= 1
                     and self.resources[5] >= 1
                 ):
-
+                    self.potential_settlement = self.get_potential_settlement()
                     for settlement in self.potential_settlement:
                         action_space_list.append((1, settlement))
 
@@ -492,7 +503,10 @@ class Catan:
         def build_settlement(self, coords: tuple, start=False):
 
             # examing where I can build a settlement
+            assert coords not in self.settlements, "Building in the same spot!"
+
             logging.debug(f"Built settlement at : {coords}")
+
             self.catan.board[coords[0], coords[1]] = self.tag
             self.settlements.append(coords)
 
@@ -504,6 +518,9 @@ class Catan:
                 self.resources[5] -= 1
 
         def build_road(self, coords: tuple, start=False):
+
+            assert coords not in self.roads, "Building in the same spot!"
+
             logging.debug(f"Built road at : {coords}")
 
             self.catan.board[coords[0], coords[1]] = self.tag
@@ -514,7 +531,15 @@ class Catan:
                 self.resources[2] -= 1
 
         def build_city(self, coords):
+            assert coords not in self.cities, "Building in the same spot!"
+
+            logging.debug(f"Built city at : {coords}")
+
             self.catan.board[coords[0], coords[1]] = self.tag
+            self.cities.append(coords)
+
+            self.resources[3] -= 3
+            self.resources[4] -= 2
 
         def trade_with_bank(self, resource_in_resource_out):
             resource_in = resource_in_resource_out[0]
@@ -593,36 +618,52 @@ class Catan:
             if coords == None:
                 for y, x in self.roads:
                     potential_list = [
-                        (y, x + 2),
-                        (y, x - 2),
-                        (y + 2, x + 1),
-                        (y - 2, x + 1),
-                        (y + 2, x - 1),
-                        (y - 2, x - 1),
+                        [y, x + 2, [(y + 1, x + 1), (y - 1, x + 1)]],
+                        [y, x - 2, [(y + 1, x - 1), (y - 1, x - 1)]],
+                        [y + 2, x + 1, [(y + 1, x + 1), (y + 1, x)]],
+                        [y - 2, x + 1, [(y - 1, x + 1), (y - 1, x)]],
+                        [y + 2, x - 1, [(y + 1, x - 1), (y + 1, x)]],
+                        [y - 2, x - 1, [(y - 1, x - 1), (y - 1, x)]],
                     ]
-                    for _y, _x in potential_list:
+
+                    for _y, _x, blocking in potential_list:
                         if (
                             self.catan.board[_y, _x] == -2
                             and (_y, _x) not in return_list_sett
                         ):
-                            return_list_road.append((_y, _x))
+                            for _y2, _x2 in blocking:
+                                if (
+                                    self.catan.board[_y2, _x2]
+                                    not in self.catan.player_tags
+                                ):
+                                    return_list_road.append((_y, _x))
 
             return return_list_sett + return_list_road
 
         def reward_matrix(self, action: int):
 
             reward_matrix = {
-                0: 0,
-                1: 0,
-                2: 0,
-                3: 0,
-                "win": (self.points**2 - 6**2) + 2000 * (1 / (catan.turn + 1)),
-                "loss": self.points**2 - 6**2,
-                # self.points
-                # self.points
+                "solo": {
+                    0: 0,
+                    1: 0,
+                    2: 0,
+                    3: 0,
+                    "win": (self.points**2 - 6**2) + 2000 * (1 / (catan.turn + 1)),
+                    "loss": self.points**2 - 6**2,
+                    # self.points
+                    # self.points
+                },
+                "multi": {
+                    0: 0,
+                    1: 0,
+                    2: 0,
+                    3: 0,
+                    "win": 100,
+                    "loss": -100,
+                },
             }
 
-            return reward_matrix[action]
+            return reward_matrix[self.mode][action]
 
         def player_turn(self):
             action = None
@@ -665,6 +706,8 @@ class Catan:
             unique, counts = np.unique(self.actions_taken, return_counts=True)
             logging.info(f"<-- Player {self.tag} -->")
             logging.info(f"Actions taken: {dict(zip(unique, counts))}")
+            logging.info(f"Settlements : {self.settlements}")
+            logging.info(f"Roads : {self.roads}")
             logging.info(f"End Resources: {self.resources}")
             self.reward_sum = round(np.sum(np.vstack(self.r_s)))
             logging.info(f"Reward sum: {self.reward_sum}")
@@ -684,8 +727,8 @@ if __name__ == "__main__":
 
     # Model_base
     # Hyperparameters
-    H = 1024  # number of hidden layer 1 neurons
-    W = 512  # number of hidden layer 2 neurons
+    H = 2048  # number of hidden layer 1 neurons
+    W = 1024  # number of hidden layer 2 neurons
     batch_size = 5  # every how many episodes to do a param update?
     episodes = 1000
     learning_rate = 1e-5
@@ -803,7 +846,9 @@ if __name__ == "__main__":
     for episode in range(episodes):
 
         logging.info(f"Episode {episode}")
-        catan = Catan(seed=1, player_type=player_type, player_count=player_count)
+        catan = Catan(
+            seed=1, player_type=player_type, player_count=player_count, mode="multi"
+        )
 
         catan.game_start()
 
