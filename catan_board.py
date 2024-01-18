@@ -140,7 +140,8 @@ class Catan:
 
         board_string = np.array2string(board)
         board_string = board_string.replace(f"{zero_tmp}", "  ")
-        logging.debug(board_string) if debug else logging.info(board_string)
+        logging.debug(board_string) if debug else print(board_string)
+        print(board_string)
 
     def board_turn(self):
         """
@@ -325,7 +326,6 @@ class Catan:
             self.reward_sum = 0
 
         def recalc_points(self):
-            self.longest_road = self.calculate_longest_road()
             self.points = (
                 len(self.settlements)
                 + 2 * len(self.cities)
@@ -349,25 +349,29 @@ class Catan:
             max_length_all = 0
             for road in self.roads:
                 max_length_all = max(
-                    self.depth_search_longest_road(road, existing_roads=[road]),
+                    self.depth_search_longest_road(road, existing_roads=[road],backward_roads=[]),
                     max_length_all,
                 )
 
             return max_length_all
 
-        def depth_search_longest_road(self, road, existing_roads: list):
+        def depth_search_longest_road(self, road, existing_roads: list, backward_roads:list):
+
+            
+
             next_roads = [
                 r
                 for r in self.roads
-                if r not in existing_roads
+                if r not in backward_roads and  r not in existing_roads and r != road
                 and abs(r[0] - road[0]) + abs(r[1] - road[1]) <= 3
             ]
             if len(next_roads) == 0:
                 return len(existing_roads)
 
+            assert len(next_roads) <=4
             for next_road in next_roads:
                 existing_roads.append(next_road)
-                return self.depth_search_longest_road(road, existing_roads)
+                return self.depth_search_longest_road(road, existing_roads,next_roads)
 
         def get_action_space(self, start=None, attributes=None):
             """
@@ -578,6 +582,9 @@ class Catan:
                 self.resources[1] -= 1
                 self.resources[2] -= 1
 
+                if len(self.roads) >=5:
+                    self.longest_road = self.calculate_longest_road()
+
         def build_city(self, coords):
             assert coords not in self.cities, "Building in the same spot!"
 
@@ -687,7 +694,7 @@ class Catan:
                                 ):
                                     return_list_road.append((_y, _x))
 
-            return return_list_sett + return_list_road
+            return list(set(return_list_sett + return_list_road))
 
         def get_potential_city(self):
             return self.settlements
@@ -773,7 +780,7 @@ if __name__ == "__main__":
     logname = "catan_game.txt"
     logging.basicConfig(
         format="%(message)s",
-        level=20,
+        level=40,
         # filename=logname,
         # filemode="w",
     )
