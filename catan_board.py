@@ -356,9 +356,6 @@ class Catan:
             return max_length_all
 
         def depth_search_longest_road(self, road, existing_roads: list, backward_roads:list):
-
-            
-
             next_roads = [
                 r
                 for r in self.roads
