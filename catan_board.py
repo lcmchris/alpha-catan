@@ -3,6 +3,8 @@ import numpy as np
 import pickle
 from matplotlib import pyplot as plt
 import logging
+from enum import Enum
+
 from datetime import datetime
 
 np.set_printoptions(edgeitems=30, linewidth=1000000)
@@ -10,6 +12,11 @@ np.set_printoptions(edgeitems=30, linewidth=1000000)
 
 def arr_to_tuple(arr: np.array):
     return [tuple(l) for l in arr.tolist()]
+
+
+class PlayerType(Enum):
+    RANDOM = "random"
+    MODEL = "model"
 
 
 class Catan:
@@ -84,6 +91,7 @@ class Catan:
         self.all_settlement_spots = arr_to_tuple(np.argwhere(self.board == -1))
         self.all_road_spots = arr_to_tuple(np.argwhere(self.board == -2))
         self.all_trades = [(x, y) for x in range(1, 6) for y in range(1, 6) if x != y]
+        self.all_discards = [1,2,3,4,5]
 
         self.base_action_space = self.get_all_action_space()
 
@@ -100,6 +108,7 @@ class Catan:
         # 2, {list of all road} :: Dim = 72
         # 3, {list of all cities} :: Dim = 2*(3+4+4+5+5+6) = 54
         # 4, {list of all trades} :: Dim = (4 * 5) = 20
+        # 5, {list of discards} :: Dim = (5 * 1) = 5
         # Total dim = 201
 
         action_space = {
@@ -108,6 +117,7 @@ class Catan:
             2: self.all_settlement_spots,  # settlement
             3: self.all_settlement_spots,  # city
             4: self.all_trades,  # trade
+            5: self.all_discards # discards
         }
         flatten_action_space = [
             (action_index, potential_action)
@@ -117,7 +127,9 @@ class Catan:
 
         return flatten_action_space
 
-    def generate_players(self, player_count: int, player_type: str, mode: str):
+    def generate_players(
+        self, player_count: int, player_type: PlayerType, mode: str
+    ) -> dict:
         players = {}
         for i in range(player_count):
             player = Catan.Player(
@@ -141,18 +153,20 @@ class Catan:
         board_string = np.array2string(board)
         board_string = board_string.replace(f"{zero_tmp}", "  ")
         logging.debug(board_string) if debug else print(board_string)
-        print(board_string)
 
     def board_turn(self):
         """
         roll dice and deliver resources
         """
         roll = self.roll()
+        logging.debug(f"Rolled: {roll - 10}")
+
         if roll == 17:
             # need to cut resources by half
+            for player in self.players.values():
+                player.discard_resources_turn()
             pass
         else:
-            logging.debug(f"Rolled: {roll - 10}")
             self.deliver_resource(roll)
 
     def roll(self):
@@ -224,10 +238,10 @@ class Catan:
         21 x 23
 
         """
+        # fmt: off
         arr = np.array(
             [
                 # The extra padding is to make sure the validation works for delivering resources.
-                # fmt: off
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -273,7 +287,7 @@ class Catan:
         return arr
 
     class Player:
-        def __init__(self, catan, tag: int, player_type: str, mode: str) -> None:
+        def __init__(self, catan, tag: int, player_type: PlayerType, mode: str) -> None:
             self.catan = catan
             self.player_type = player_type
             self.tag = tag
@@ -349,26 +363,32 @@ class Catan:
             max_length_all = 0
             for road in self.roads:
                 max_length_all = max(
-                    self.depth_search_longest_road(road, existing_roads=[road],backward_roads=[]),
+                    self.depth_search_longest_road(
+                        road, existing_roads=[road], backward_roads=[]
+                    ),
                     max_length_all,
                 )
 
             return max_length_all
 
-        def depth_search_longest_road(self, road, existing_roads: list, backward_roads:list):
+        def depth_search_longest_road(
+            self, road, existing_roads: list, backward_roads: list
+        ):
             next_roads = [
                 r
                 for r in self.roads
-                if r not in backward_roads and  r not in existing_roads and r != road
+                if r not in backward_roads
+                and r not in existing_roads
+                and r != road
                 and abs(r[0] - road[0]) + abs(r[1] - road[1]) <= 3
             ]
             if len(next_roads) == 0:
                 return len(existing_roads)
 
-            assert len(next_roads) <=4
+            assert len(next_roads) <= 4
             for next_road in next_roads:
                 existing_roads.append(next_road)
-                return self.depth_search_longest_road(road, existing_roads,next_roads)
+                return self.depth_search_longest_road(road, existing_roads, next_roads)
 
         def get_action_space(self, start=None, attributes=None):
             """
@@ -389,8 +409,13 @@ class Catan:
                 self.potential_road = self.get_potential_road(attributes)
                 for road in self.potential_road:
                     action_space_list.append((1, road))
+            elif start == "discard":
+                for resource, count in self.resources.items():
+                    if count>0:
+                        action_space_list.append((5,resource))
+
             else:
-                # leavingdevelopment card later
+                # leaving development card later
                 action_space_list.append((0, None))
 
                 if (self.resources[1] >= 1 and self.resources[2] >= 1) and len(
@@ -465,6 +490,28 @@ class Catan:
             best_action = np.argmax(possible_actions_arr)
             return best_action
 
+        def discard_resources(self, attributes):
+            self.resources[attributes] -= 1
+
+        def discard_resources_turn(self):
+            if sum(self.resources.values()) > 7:
+                if self.player_type == PlayerType.RANDOM:
+                    self.discard_resources_random()
+                elif self.player_type == PlayerType.MODEL:
+                    self.discard_resources_model()
+
+        def discard_resources_random(self):
+            while sum(self.resources.values()) > 7:
+                self.resources[random.randint(1, 5)] -= 1
+
+        def discard_resources_model(self):
+            while sum(self.resources.values()) > 7:
+                # get action space, pick random action, perform action. Repeat until all actions are done or hits nothing action.
+                self.action_space = self.get_action_space(start='discard')
+                action, attributes = self.pick_action()
+                logging.debug(f"Action: {action}, Attributes: {attributes}")
+                self.perform_action(action, attributes)
+
         def get_potential_trade(self):
             # returns a list of tuples of the form (resource, resource)
             list_of_potential_trades = []
@@ -495,7 +542,7 @@ class Catan:
             return np.append(resource_arr, board)
 
         def pick_action(self):
-            if self.player_type == "random":
+            if self.player_type == PlayerType.RANDOM:
                 # Prefer to build settlements and roads over trading and doing nothing
                 action, attributes = random.choice(
                     self.action_arr_to_action_space_list(self.action_space)
@@ -505,11 +552,11 @@ class Catan:
 
                 return action, attributes
 
-            elif self.player_type == "model":
+            elif self.player_type == PlayerType.MODEL:
                 # model design:
                 # forward the policy network and sample an action from the returned probability
 
-                x = self.prepro()  # appendboard state
+                x = self.prepro()  # append board state
 
                 z1, a1, z2, a2, z3, a3 = policy_forward(x, self.action_space)
 
@@ -547,7 +594,8 @@ class Catan:
                 self.build_city(attributes)
             elif action == 4:
                 self.trade_with_bank(attributes)
-
+            elif action == 5:
+                self.discard_resources(attributes)
             else:
                 raise ValueError("action not in action space")
 
@@ -579,7 +627,7 @@ class Catan:
                 self.resources[1] -= 1
                 self.resources[2] -= 1
 
-                if len(self.roads) >=5:
+                if len(self.roads) >= 5:
                     self.longest_road = self.calculate_longest_road()
 
         def build_city(self, coords):
@@ -703,6 +751,8 @@ class Catan:
                     1: 0,
                     2: 0,
                     3: 0,
+                    4:0,
+                    5:0,
                     "win": (self.points**2 - 6**2) + 2000 * (1 / (catan.turn + 1)),
                     "loss": self.points**2 - 6**2,
                     # self.points
@@ -714,6 +764,7 @@ class Catan:
                     2: 2.5,
                     3: 5,
                     4: 0,
+                    5:0,
                     "win": (self.points**2 - 6**2) + 2000 * (1 / (catan.turn + 1)),
                     "loss": self.points**2 - 6**2,
                 },
@@ -754,9 +805,9 @@ class Catan:
             # logging.debug(f"<-- Player {self.tag} -->")
             logging.debug(f"Resources: {self.resources}")
             logging.debug(f"Points: {self.points}")
-            logging.debug(
-                f"Potential: {self.potential_settlement} {self.potential_road} {self.potential_trade}"
-            )
+            logging.debug(f"Potential sett: {self.potential_settlement}")
+            logging.debug(f"Potential road: {self.potential_road}")
+            logging.debug(f"Potential trade: {self.potential_trade}")
 
         def player_episode_audit(self):
             unique, counts = np.unique(self.actions_taken, return_counts=True)
@@ -777,7 +828,7 @@ if __name__ == "__main__":
     logname = "catan_game.txt"
     logging.basicConfig(
         format="%(message)s",
-        level=40,
+        level=20,
         # filename=logname,
         # filemode="w",
     )
@@ -792,7 +843,7 @@ if __name__ == "__main__":
     gamma = 0.99  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
     max_turn = 500
-    player_type = ["model", "model"]  # model | random
+    player_type = [PlayerType.MODEL, PlayerType.MODEL]  # model | random
     player_count = 2  # 1 - 4
 
     resume = False  # resume from previous checkpoint?
@@ -898,7 +949,6 @@ if __name__ == "__main__":
     }  # update buffers that add up gradients over a batch
     rmsprop_cache = {k: np.zeros_like(v) for k, v in model.items()}  # rmsprop memory
 
-    start = datetime.now()
     # Run experiment
     for episode in range(episodes):
         logging.info(f"Episode {episode}")
@@ -936,7 +986,7 @@ if __name__ == "__main__":
         reward_list.append(player.reward_sum)
 
         for player_tag, player in catan.players.items():
-            if player.player_type == "model":
+            if player.player_type == PlayerType.MODEL:
                 # stack together all inputs, hidden states, action gradients, and rewards for this episode
                 ep_x_s = np.vstack(player.x_s)
                 ep_z1_s = np.vstack(player.z1_s)
@@ -975,10 +1025,11 @@ if __name__ == "__main__":
                             learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-7)
                         )
                         grad_buffer[k] = np.zeros_like(v)  # reset batch gradient buffer
-    logging.info(f"Time taken: {datetime.now() - start}")
 
     # save model
     pickle.dump(model, open("catan_model.pickle", "wb"))
+    pickle.dump(turn_list,open("turn_list.pickle", "wb") )
+    pickle.dump(reward_list,open("reward_list.pickle", "wb") )
 
     plot_running_avg(turn_list)
     plot_running_avg(reward_list)

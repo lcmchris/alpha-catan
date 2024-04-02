@@ -4,35 +4,64 @@ from playwright.sync_api import sync_playwright, ElementHandle
 import cv2 as cv2
 import numpy as np
 
-pr = sync_playwright().start()
-
-browser = pr.chromium.launch(headless=False)
-context = browser.new_context()
-page = context.new_page()
-
-page.goto("https://colonist.io/")
-page.click("text=Agree")
-page.click("text=Lobby")
-page.click("text=Create Room")
-page.click("text=Add bot")
-page.locator("#botspeed_settings_right_arrow").click()
-page.click("text=Start Game")
-
-
-canvas = page.locator("canvas").nth(0)
-time.sleep(3)
-
-
+# constants
 starting_coords = [80, 80]
-
 x_spacing = 50
 y_1_spacing = 30
 y_2_spacing = 60
 selection_spacing = 45
-
 nodes_count = [3, 4, 4, 5, 5, 6, 6, 5, 5, 4, 4, 3]
-
 road = y_1_spacing / 2
+
+
+method = cv2.TM_CCOEFF_NORMED
+tile_count = 2  # 2 tiles per number
+
+start_time = time.time()
+numbers = {
+    2: 1,
+    3: 2,
+    4: 2,
+    5: 2,
+    6: 2,
+    8: 2,
+    9: 2,
+    10: 2,
+    11: 2,
+    12: 1,
+}
+resource_cards = {
+    1: 3,  # brick
+    2: 4,  # lumber
+    3: 3,  # ore
+    4: 4,  # grain
+    5: 4,  # wool
+    6: 1,  # desert
+}
+
+
+box_size = (45, 85)
+box_coords = {
+    (210, 90): (5, 8),
+    (310, 90): (5, 12),
+    (410, 90): (5, 16),
+    (160, 180): (9, 6),
+    (260, 180): (9, 10),
+    (360, 180): (9, 14),
+    (460, 180): (9, 18),
+    (110, 270): (13, 4),
+    (210, 270): (13, 8),
+    (310, 270): (13, 12),
+    (410, 270): (13, 16),
+    (510, 270): (13, 20),
+    (160, 360): (17, 6),
+    (260, 360): (17, 10),
+    (360, 360): (17, 14),
+    (460, 360): (17, 18),
+    (210, 470): (21, 8),
+    (310, 470): (21, 12),
+    (410, 470): (21, 16),
+}
 
 
 # fmt: off
@@ -46,108 +75,169 @@ all_road_spots = [(3, 7), (3, 9), (3, 11), (3, 13), (3, 15), (3, 17), (5, 6), (5
                   (9, 4), (9, 8), (9, 12), (9, 16), (9, 20), 
                   (11, 3), (11, 5), (11, 7), (11, 9), (11, 11), (11, 13), (11, 15), (11, 17), (11, 19), (11, 21), (13, 2), (13, 6), (13, 10), (13, 14), (13, 18), (13, 22), (15, 3), (15, 5), (15, 7), (15, 9), (15, 11), (15, 13), (15, 15), (15, 17), (15, 19), (15, 21), (17, 4), (17, 8), (17, 12), (17, 16), (17, 20), (19, 5), (19, 7), (19, 9), (19, 11), (19, 13), (19, 15), (19, 17), (19, 19), (21, 6), (21, 10), (21, 14), (21, 18), (23, 7), (23, 9), (23, 11), (23, 13), (23, 15), (23, 17)]
 # fmt: on
-settlement_pxl_mapping = {}
-road_pxl_mapping = {}
 
 
-for spt_y, spt_x in all_settlement_spots:
-    nomarlised_y = (spt_y - 2) / 2
-    nomarlised_x = (spt_x - 2) / 2
-    y_pxl = (
-        nomarlised_y // 2 * (y_2_spacing + y_1_spacing)
-        + (0 if nomarlised_y % 2 == 0 else y_1_spacing)
-        + starting_coords[0]
-    )
-    x_pxl = nomarlised_x * (x_spacing) + starting_coords[1]
-    settlement_pxl_mapping[(spt_y, spt_x)] = (y_pxl, x_pxl)
+class ColonistIOAutomator:
+    def __init__(self) -> None:
+        self.settlement_pxl_mapping = {}
+        self.road_pxl_mapping = {}
 
+        self.pr = sync_playwright().start()
+        self.page = self.create_page()
+        self.canvas = self.create_1v1_game()
+        # self.canvas_img = cv2.imdecode(
+        #     np.frombuffer(self.canvas.screenshot(), np.uint8), cv2.IMREAD_GRAYSCALE
+        # )
+        # self.board_coords = self.get_board_coords_ocr()
+        self.last_messages = self.page.query_selector_all(".message-post")
 
-for spt_y, spt_x in all_road_spots:
-    nomarlised_y = (spt_y - 3) / 2
-    nomarlised_x = (spt_x - 3) / 2
-    y_pxl = (
-        (y_2_spacing / 2 + y_1_spacing / 2 if nomarlised_y % 2 == 1 else 0)
-        + nomarlised_y // 2 * (y_2_spacing + y_1_spacing)
-        + y_1_spacing / 2
-        + starting_coords[0]
-    )
-    x_pxl = (nomarlised_x * (x_spacing) + x_spacing / 2) + starting_coords[1]
-    road_pxl_mapping[(spt_y, spt_x)] = (y_pxl, x_pxl)
+        self.wait_for_turn()
 
+    def generate_settlement_pxl_mapping(self):
+        for spt_y, spt_x in all_settlement_spots:
+            nomarlised_y = (spt_y - 2) / 2
+            nomarlised_x = (spt_x - 2) / 2
+            y_pxl = (
+                nomarlised_y // 2 * (y_2_spacing + y_1_spacing)
+                + (0 if nomarlised_y % 2 == 0 else y_1_spacing)
+                + starting_coords[0]
+            )
+            x_pxl = nomarlised_x * (x_spacing) + starting_coords[1]
+            self.settlement_pxl_mapping[(spt_y, spt_x)] = (y_pxl, x_pxl)
 
-def click_buy(coords, mapping, selection_spacing=45):
-    canvas.click(
-        position={
-            "x": mapping[coords][1],
-            "y": mapping[coords][0],
-        }
-    )
-    canvas.click(
-        position={
-            "x": mapping[coords][1],
-            "y": mapping[coords][0] - 45,
-        }
-    )
-    # load graphics
-    time.sleep(1)
+    def generate_road_pxl_mapping(self):
+        for spt_y, spt_x in all_road_spots:
+            nomarlised_y = (spt_y - 3) / 2
+            nomarlised_x = (spt_x - 3) / 2
+            y_pxl = (
+                (y_2_spacing / 2 + y_1_spacing / 2 if nomarlised_y % 2 == 1 else 0)
+                + nomarlised_y // 2 * (y_2_spacing + y_1_spacing)
+                + y_1_spacing / 2
+                + starting_coords[0]
+            )
+            x_pxl = (nomarlised_x * (x_spacing) + x_spacing / 2) + starting_coords[1]
+            self.road_pxl_mapping[(spt_y, spt_x)] = (y_pxl, x_pxl)
 
+    def create_page(self):
+        browser = self.pr.chromium.launch(headless=False)
+        context = browser.new_context()
+        return context.new_page()
 
-click_buy(coords=(2, 8), mapping=settlement_pxl_mapping)
-click_buy(coords=(3, 7), mapping=road_pxl_mapping)
-click_buy(coords=(6, 6), mapping=settlement_pxl_mapping)
-click_buy(coords=(5, 6), mapping=road_pxl_mapping)
+    def create_1v1_game(self):
+        self.page.goto("https://colonist.io/")
+        self.page.click("text=Agree")
+        self.page.click("text=Lobby")
+        self.page.click("text=Create Room")
 
-time.sleep(3)
-canvas.screenshot(path="data/pr_board.png")
+        # self.page.click("text=Add Bot")add-bot-button
+        self.page.locator("#add-bot-button").nth(1).click()
+        self.page.locator("#botspeed_settings_right_arrow").click()
+        self.page.click("text=Start Game")
+        canvas = None
+        while canvas is None:
+            canvas = self.page.locator("canvas").nth(0)
+
+        return canvas
+
+    def click_buy(self, coords, selection_spacing=45):
+        if coords in all_settlement_spots:
+            mapping = self.settlement_pxl_mapping
+        elif coords in all_road_spots:
+            mapping = self.settlement_pxl_mapping
+
+        self.canvas.click(
+            position={
+                "x": mapping[coords][1],
+                "y": mapping[coords][0],
+            }
+        )
+        self.canvas.click(
+            position={
+                "x": mapping[coords][1],
+                "y": mapping[coords][0] - selection_spacing,
+            }
+        )
+        # load graphics
+        time.sleep(1)
+
+    def end_turn(self):
+        self.page.keyboard.press("Space")
+
+    def wait_for_turn(self):
+        while True:
+            messages = self.page.query_selector_all(".message-post")
+            last_msg_cnt = len(self.last_messages)
+            new_msg_cnt = len(messages)
+            if new_msg_cnt > last_msg_cnt:
+                new_messages = messages[last_msg_cnt:new_msg_cnt]
+                for message in new_messages:
+                    self.parse_message(message)
+            else:
+                time.sleep(5)
+            # if rolled(messages[-1]):
+
+            self.last_messages = messages
+
+    def parse_message(self, message: ElementHandle):
+        if "rolled" in message.inner_text():
+            dice_rolled = self.query_rolled(message)
+            print(dice_rolled)
+
+        elif "placed a" in message.inner_text():
+            placed_settlement = self.query_settlement(message)
+            print(placed_settlement)
+
+    def query_rolled(self, message: ElementHandle) -> list[int, int]:
+        dices = ["dice_1", "dice_2", "dice_3", "dice_4", "dice_5", "dice_6"]
+
+        dice_rolled = []
+        for dice in dices:
+            # TODO what if its double dice?
+            if matchs := message.query_selector_all(f'img[alt="{dice}"]') is not None:
+                for _ in matchs:
+                    dice_rolled.append(dice)
+        assert len(dice_rolled) == 2
+        return dice_rolled
+
+    def query_settlement(self, message: ElementHandle) -> list[int, int]:
+        pass
+
+    def get_center(self, coords, h, w):
+        return tuple(map(sum, zip(coords, (h / 2, w / 2))))
+
+    def match_coords(
+        self,
+        coord,
+        box_coords: dict[tuple[int, int] : tuple[int, int]],
+        box_size: tuple[int, int],
+    ):
+        for x, y in box_coords.keys():
+            if (
+                x - box_size[0] < coord[0] < x + box_size[0]
+                and y - box_size[1] < coord[1] < y + box_size[1]
+            ):
+                return box_coords[(x, y)]
+        raise Exception("No match found")
+
+    def get_board_coords_ocr(self):
+        numbers_coords = {number: [] for number in numbers}
+        for tile, tile_count in numbers.items():
+            template = cv2.imread(
+                f"image-matching/tile_{str(tile)}.png", cv2.IMREAD_GRAYSCALE
+            )
+            h, w = template.shape
+
+            for count in range(tile_count):
+                res = cv2.matchTemplate(self.canvas_img, template, method)
+                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+                numbers_coords[tile].append(
+                    self.match_coords(
+                        self.get_center(max_loc, h, w), box_coords, box_size
+                    )
+                )
+        return numbers_coords
+
 
 # find text on page
-orig_messages = page.query_selector_all(".message-post")
-
-
-def query_rolled(message: ElementHandle) -> [int, int]:
-    dices = ["dice_1", "dice_2", "dice_3", "dice_4", "dice_5", "dice_6"]
-
-    dice_rolled = []
-    for dice in dices:
-        if message.query_selector(f'img[alt="{dice}"]'):
-            dice_rolled.append(dice)
-    assert len(dice_rolled) == 2
-    return dice_rolled
-
-
-def query_placed_a(message: ElementHandle) -> None:
-    check_map_for_new_structure()
-    return
-
-
-def check_map_for_new_structure():
-    pass
-
-
-def rolled(message: ElementHandle):
-    return "rolled" in message.inner_text()
-
-
-def place_a(message: ElementHandle):
-    return "placed a" in message.inner_text()
-
-
-# dice_1, dice_2, dice_3, dice_4,...
-
-while True:
-    messages = page.query_selector_all(".message-post")
-
-    while orig_messages == messages:
-        time.sleep(5)
-    if rolled(messages[-1]):
-        dice_rolled = query_rolled(messages[-1])
-    elif place_a(messages[-1]):
-        query_placed_a()
-
-    orig_messages = page.query_selector_all(".message-post")
-
-# page.query_selector_all("#game-log-text")
-# orig_log_text = cur_log_text
-
-## End turn
-end_turn_button = page.keyboard.press("Space")
+if __name__ == "__main__":
+    colonistUI = ColonistIOAutomator()

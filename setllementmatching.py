@@ -1,15 +1,12 @@
 import cv2 as cv2
 import numpy as np
 
-img = cv2.imread("data/pr_board.png", cv2.IMREAD_COLOR)
-template = cv2.imread(f"image-matching/road_red3_rot2.png", cv2.IMREAD_COLOR)
+img = cv2.imread("data/pr_board.png", cv2.IMREAD_GRAYSCALE)
 
 
+# for i in range(3):
+template = cv2.imread(f"image-matching/road_red_4.png", cv2.IMREAD_GRAYSCALE)
 h, w = template.shape[:2]
-
-for i in range(3):
-    template = cv2.imread(f"image-matching/road_red_{i}.png", cv2.IMREAD_COLOR)
-
 for i in range(1):
     result = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED)
 
