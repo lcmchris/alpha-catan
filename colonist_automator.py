@@ -1,84 +1,38 @@
 import time
+from catan_board import Catan
 from playwright.sync_api import sync_playwright, ElementHandle
-
+import pathlib
 import cv2 as cv2
 import numpy as np
 
-# constants
-starting_coords = [80, 80]
-x_spacing = 50
-y_1_spacing = 30
-y_2_spacing = 60
-selection_spacing = 45
-nodes_count = [3, 4, 4, 5, 5, 6, 6, 5, 5, 4, 4, 3]
-road = y_1_spacing / 2
 
-
-method = cv2.TM_CCOEFF_NORMED
-tile_count = 2  # 2 tiles per number
 
 start_time = time.time()
-numbers = {
-    2: 1,
-    3: 2,
-    4: 2,
-    5: 2,
-    6: 2,
-    8: 2,
-    9: 2,
-    10: 2,
-    11: 2,
-    12: 1,
-}
-resource_cards = {
-    1: 3,  # brick
-    2: 4,  # lumber
-    3: 3,  # ore
-    4: 4,  # grain
-    5: 4,  # wool
-    6: 1,  # desert
-}
 
 
-box_size = (45, 85)
-box_coords = {
-    (210, 90): (5, 8),
-    (310, 90): (5, 12),
-    (410, 90): (5, 16),
-    (160, 180): (9, 6),
-    (260, 180): (9, 10),
-    (360, 180): (9, 14),
-    (460, 180): (9, 18),
-    (110, 270): (13, 4),
-    (210, 270): (13, 8),
-    (310, 270): (13, 12),
-    (410, 270): (13, 16),
-    (510, 270): (13, 20),
-    (160, 360): (17, 6),
-    (260, 360): (17, 10),
-    (360, 360): (17, 14),
-    (460, 360): (17, 18),
-    (210, 470): (21, 8),
-    (310, 470): (21, 12),
-    (410, 470): (21, 16),
-}
+
+class ColonistIOAutomator(Catan):# constants
+    starting_coords = [80, 80]
+    x_spacing = 50
+    y_1_spacing = 30
+    y_2_spacing = 60
+    selection_spacing = 45
+    nodes_count = [3, 4, 4, 5, 5, 6, 6, 5, 5, 4, 4, 3]
+    road = y_1_spacing / 2
+    match_method = cv2.TM_CCOEFF_NORMED
+    tile_count = 2  # 2 tiles per number
+    box_size = (45, 85)
+    box_coords = {
+        (210, 90): (5, 8),        (310, 90): (5, 12),        (410, 90): (5, 16),        (160, 180): (9, 6),
+        (260, 180): (9, 10),        (360, 180): (9, 14),        (460, 180): (9, 18),        (110, 270): (13, 4),
+        (210, 270): (13, 8),        (310, 270): (13, 12),        (410, 270): (13, 16),        (510, 270): (13, 20),
+        (160, 360): (17, 6),        (260, 360): (17, 10),        (360, 360): (17, 14),        (460, 360): (17, 18),
+        (210, 470): (21, 8),        (310, 470): (21, 12),        (410, 470): (21, 16),    }
+    def __init__(self, model_path:str) -> None:
+        super().__init__()
+        self.model = self.load_model_pickle(model_path)
 
 
-# fmt: off
-all_settlement_spots = [(2, 8), (2, 12), (2, 16), (4, 6), (4, 10), (4, 14), (4, 18), (6, 6), (6, 10), (6, 14), (6, 18), 
-                        (8, 4), (8, 8), (8, 12), (8, 16), (8, 20), (10, 4), (10, 8), (10, 12), (10, 16), (10, 20), 
-                        (12, 2), (12, 6), (12, 10), (12, 14), (12, 18), (12, 22), (14, 2), (14, 6), (14, 10), (14, 14), (14, 18), (14, 22), 
-                        (16, 4), (16, 8), (16, 12), (16, 16), (16, 20), (18, 4), (18, 8), (18, 12), (18, 16), (18, 20), 
-                        (20, 6), (20, 10), (20, 14), (20, 18), (22, 6), (22, 10), (22, 14), (22, 18), (24, 8), (24, 12), (24, 16)]
-all_road_spots = [(3, 7), (3, 9), (3, 11), (3, 13), (3, 15), (3, 17), (5, 6), (5, 10), (5, 14), (5, 18), 
-                  (7, 5), (7, 7), (7, 9), (7, 11), (7, 13), (7, 15), (7, 17), (7, 19), 
-                  (9, 4), (9, 8), (9, 12), (9, 16), (9, 20), 
-                  (11, 3), (11, 5), (11, 7), (11, 9), (11, 11), (11, 13), (11, 15), (11, 17), (11, 19), (11, 21), (13, 2), (13, 6), (13, 10), (13, 14), (13, 18), (13, 22), (15, 3), (15, 5), (15, 7), (15, 9), (15, 11), (15, 13), (15, 15), (15, 17), (15, 19), (15, 21), (17, 4), (17, 8), (17, 12), (17, 16), (17, 20), (19, 5), (19, 7), (19, 9), (19, 11), (19, 13), (19, 15), (19, 17), (19, 19), (21, 6), (21, 10), (21, 14), (21, 18), (23, 7), (23, 9), (23, 11), (23, 13), (23, 15), (23, 17)]
-# fmt: on
-
-
-class ColonistIOAutomator:
-    def __init__(self) -> None:
         self.settlement_pxl_mapping = {}
         self.road_pxl_mapping = {}
 
@@ -88,34 +42,57 @@ class ColonistIOAutomator:
         # self.canvas_img = cv2.imdecode(
         #     np.frombuffer(self.canvas.screenshot(), np.uint8), cv2.IMREAD_GRAYSCALE
         # )
-        # self.board_coords = self.get_board_coords_ocr()
+        self.board_coords = self.get_board_coords_ocr()
         self.last_messages = self.page.query_selector_all(".message-post")
 
         self.wait_for_turn()
 
+    
+    def load_model_pickle(self,rel_model_path:str):
+        parent = pathlib.Path(__file__).resolve()
+        model_path = parent.joinpath(rel_model_path)
+
+        return pickle.loads(model_path)
+
+
+    def pick_action(self):
+        
+        x = self.prepro()  # append board state
+        _, _, _, _, _, a3 = self.policy_forward(x, self.action_space)
+
+
+        best_action = np.argmax(a3)
+
+        return self.action_idx_to_action_tuple(best_action)
+    
+    def perform_action(self):
+
+
+
+
     def generate_settlement_pxl_mapping(self):
-        for spt_y, spt_x in all_settlement_spots:
+        for spt_y, spt_x in self.all_settlement_spots:
             nomarlised_y = (spt_y - 2) / 2
             nomarlised_x = (spt_x - 2) / 2
             y_pxl = (
-                nomarlised_y // 2 * (y_2_spacing + y_1_spacing)
-                + (0 if nomarlised_y % 2 == 0 else y_1_spacing)
-                + starting_coords[0]
+                nomarlised_y // 2 * (self.y_2_spacing + self.y_1_spacing)
+                + (0 if nomarlised_y % 2 == 0 else self.y_1_spacing)
+                + self.starting_coords[0]
             )
-            x_pxl = nomarlised_x * (x_spacing) + starting_coords[1]
+            x_pxl = nomarlised_x * (self.x_spacing) + self.starting_coords[1]
             self.settlement_pxl_mapping[(spt_y, spt_x)] = (y_pxl, x_pxl)
 
     def generate_road_pxl_mapping(self):
-        for spt_y, spt_x in all_road_spots:
+        for spt_y, spt_x in self.all_road_spots:
             nomarlised_y = (spt_y - 3) / 2
             nomarlised_x = (spt_x - 3) / 2
             y_pxl = (
-                (y_2_spacing / 2 + y_1_spacing / 2 if nomarlised_y % 2 == 1 else 0)
-                + nomarlised_y // 2 * (y_2_spacing + y_1_spacing)
-                + y_1_spacing / 2
-                + starting_coords[0]
+                (self.y_2_spacing / 2 + self.y_1_spacing / 2 if nomarlised_y % 2 == 1 else 0)
+                + nomarlised_y // 2 * (self.y_2_spacing + self.y_1_spacing)
+                + self.y_1_spacing / 2
+                + self.starting_coords[0]
             )
-            x_pxl = (nomarlised_x * (x_spacing) + x_spacing / 2) + starting_coords[1]
+            x_pxl = (nomarlised_x * (self.x_spacing) + self.x_spacing / 2) + self.starting_coords[1]
             self.road_pxl_mapping[(spt_y, spt_x)] = (y_pxl, x_pxl)
 
     def create_page(self):
@@ -140,9 +117,9 @@ class ColonistIOAutomator:
         return canvas
 
     def click_buy(self, coords, selection_spacing=45):
-        if coords in all_settlement_spots:
+        if coords in self.all_settlement_spots:
             mapping = self.settlement_pxl_mapping
-        elif coords in all_road_spots:
+        elif coords in self.all_road_spots:
             mapping = self.settlement_pxl_mapping
 
         self.canvas.click(
@@ -208,19 +185,31 @@ class ColonistIOAutomator:
     def match_coords(
         self,
         coord,
-        box_coords: dict[tuple[int, int] : tuple[int, int]],
-        box_size: tuple[int, int],
+    
     ):
-        for x, y in box_coords.keys():
+        for x, y in self.box_coords.keys():
             if (
-                x - box_size[0] < coord[0] < x + box_size[0]
-                and y - box_size[1] < coord[1] < y + box_size[1]
+                x - self.box_size[0] < coord[0] < x + self.box_size[0]
+                and y - self.box_size[1] < coord[1] < y + self.box_size[1]
             ):
-                return box_coords[(x, y)]
+                return self.box_coords[(x, y)]
         raise Exception("No match found")
 
     def get_board_coords_ocr(self):
+        numbers = {
+                    2: 1,
+                    3: 2,
+                    4: 2,
+                    5: 2,
+                    6: 2,
+                    8: 2,
+                    9: 2,
+                    10: 2,
+                    11: 2,
+                    12: 1,
+                    }
         numbers_coords = {number: [] for number in numbers}
+
         for tile, tile_count in numbers.items():
             template = cv2.imread(
                 f"image-matching/tile_{str(tile)}.png", cv2.IMREAD_GRAYSCALE
@@ -228,15 +217,61 @@ class ColonistIOAutomator:
             h, w = template.shape
 
             for count in range(tile_count):
-                res = cv2.matchTemplate(self.canvas_img, template, method)
+                res = cv2.matchTemplate(self.canvas_img, template, self.match_method)
                 min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-                numbers_coords[tile].append(
-                    self.match_coords(
-                        self.get_center(max_loc, h, w), box_coords, box_size
-                    )
+                numbers_coords[self.match_coords(
+                        self.get_center(max_loc, h, w), self.box_coords, self.box_size
+                    )].append(
+                    tile
                 )
-        return numbers_coords
 
+        tile_tyoe_coords = {number: [] for number in self.resource_cards}
+
+        for tile, tile_count in numbers.items():
+            template = cv2.imread(
+                f"image-matching/type_{str(tile)}.png", cv2.IMREAD_GRAYSCALE
+            )
+            h, w = template.shape
+
+            for count in range(tile_count):
+                res = cv2.matchTemplate(self.canvas_img, template, self.match_method)
+                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+                tile_tyoe_coords[self.match_coords(
+                        self.get_center(max_loc, h, w), self.box_coords, self.box_size
+                    )].append(tile
+                    
+                )
+
+        
+        return numbers_coords,tile_tyoe_coords
+    
+    def generate_board(self):
+        arr = self.empty_board
+
+        numbers_coords, tile_tyoe_coords = self.get_board_coords_ocr()
+
+
+
+        for coord in self.center_coords:
+            x,y = coord
+            number = numbers_coords[coord]
+            resource = tile_tyoe_coords[coord]
+            arr[y, x] = 50  # Knight reference
+            arr[y - 1, x] = resource
+            arr[y + 1, x] = number
+
+        return arr
+
+    def generate_players(self):
+        '''
+        Always start with myself and rotate clockwise.
+        '''
+        return [Catan.Player, Catan.Player]
+    
+
+
+
+        
 
 # find text on page
 if __name__ == "__main__":
