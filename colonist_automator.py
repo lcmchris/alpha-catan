@@ -1,8 +1,9 @@
 import time
-from playwright.sync_api import sync_playwright, ElementHandle
+from playwright.sync_api import sync_playwright, Locator
 
 import cv2 as cv2
 import numpy as np
+from catan_game import Catan
 
 # constants
 starting_coords = [80, 80]
@@ -77,8 +78,10 @@ all_road_spots = [(3, 7), (3, 9), (3, 11), (3, 13), (3, 15), (3, 17), (5, 6), (5
 # fmt: on
 
 
-class ColonistIOAutomator:
+
+class ColonistIOAutomator():
     def __init__(self) -> None:
+
         self.settlement_pxl_mapping = {}
         self.road_pxl_mapping = {}
 
@@ -90,8 +93,11 @@ class ColonistIOAutomator:
         # )
         # self.board_coords = self.get_board_coords_ocr()
         self.last_messages = self.page.query_selector_all(".message-post")
-
+        self.users_settlements = {}
         self.wait_for_turn()
+
+    def generate_board(self):
+        return super().generate_board()
 
     def generate_settlement_pxl_mapping(self):
         for spt_y, spt_x in all_settlement_spots:
@@ -125,19 +131,30 @@ class ColonistIOAutomator:
 
     def create_1v1_game(self):
         self.page.goto("https://colonist.io/")
-        self.page.click("text=Agree")
+        self.page.get_by_label("Consent", exact=True).click()
         self.page.click("text=Lobby")
         self.page.click("text=Create Room")
 
-        # self.page.click("text=Add Bot")add-bot-button
         self.page.locator("#add-bot-button").nth(1).click()
         self.page.locator("#botspeed_settings_right_arrow").click()
+
+        self.set_users()
+
         self.page.click("text=Start Game")
         canvas = None
         while canvas is None:
             canvas = self.page.locator("canvas").nth(0)
 
         return canvas
+
+    def set_users(self):
+        users = self.page.locator("span.room_player_username").all()
+
+        self.users = {
+            users[i].inner_text().replace(" (You)", ""): i - 10
+            for i in range(len(users))
+            if users[i].inner_text() != "Player"
+        }
 
     def click_buy(self, coords, selection_spacing=45):
         if coords in all_settlement_spots:
@@ -165,7 +182,7 @@ class ColonistIOAutomator:
 
     def wait_for_turn(self):
         while True:
-            messages = self.page.query_selector_all(".message-post")
+            messages = self.page.locator(".message-post").all()
             last_msg_cnt = len(self.last_messages)
             new_msg_cnt = len(messages)
             if new_msg_cnt > last_msg_cnt:
@@ -178,29 +195,32 @@ class ColonistIOAutomator:
 
             self.last_messages = messages
 
-    def parse_message(self, message: ElementHandle):
+    def parse_message(self, message: Locator):
+        inner_html = message.inner_html()
         if "rolled" in message.inner_text():
             dice_rolled = self.query_rolled(message)
             print(dice_rolled)
 
         elif "placed a" in message.inner_text():
-            placed_settlement = self.query_settlement(message)
-            print(placed_settlement)
+            message_alt_text = message.get_by_alt_text("settlement").is_visible()
+            if message_alt_text:
+                placed_settlement = self.query_settlement(message)
+                print(placed_settlement)
 
-    def query_rolled(self, message: ElementHandle) -> list[int, int]:
+    def query_rolled(self, message: Locator) -> list[int, int]:
         dices = ["dice_1", "dice_2", "dice_3", "dice_4", "dice_5", "dice_6"]
-
         dice_rolled = []
         for dice in dices:
-            # TODO what if its double dice?
             if matchs := message.query_selector_all(f'img[alt="{dice}"]') is not None:
                 for _ in matchs:
                     dice_rolled.append(dice)
         assert len(dice_rolled) == 2
         return dice_rolled
 
-    def query_settlement(self, message: ElementHandle) -> list[int, int]:
-        pass
+    def query_settlement(self, message: Locator) -> list[int, int]:
+        for user in self.users:
+            if user in message.inner_text():
+                self.users_settlements[user] = self.users_settlements.get(user, 0) + 1
 
     def get_center(self, coords, h, w):
         return tuple(map(sum, zip(coords, (h / 2, w / 2))))
@@ -219,7 +239,7 @@ class ColonistIOAutomator:
                 return box_coords[(x, y)]
         raise Exception("No match found")
 
-    def get_board_coords_ocr(self):
+    def get_board_coords_ocr(self) -> dict[int, list]:
         numbers_coords = {number: [] for number in numbers}
         for tile, tile_count in numbers.items():
             template = cv2.imread(
@@ -237,7 +257,20 @@ class ColonistIOAutomator:
                 )
         return numbers_coords
 
+    def get_roads_ocr(self, num_roads: int) -> list:
+        for road in range(num_roads):
+            template = cv2.imread(
+                f"image-matching/tile_{str(1)}.png", cv2.IMREAD_GRAYSCALE
+            )
+            h, w = template.shape
 
+    def get_settlement_ocr(self, message: Locator) -> list[int, int]:
+        """Get the coordinates of the current board"""
+        pass
+
+class PlayerAutomator(Player):
+
+    
 # find text on page
 if __name__ == "__main__":
     colonistUI = ColonistIOAutomator()
