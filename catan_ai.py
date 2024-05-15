@@ -41,6 +41,7 @@ class PlayerAI(Player):
             [],
         )
         super().__init__(catan, tag)
+        self.catan = catan
 
     def recalc_points(self):
         self.points = (
@@ -94,7 +95,7 @@ class PlayerAI(Player):
             )
         # resource_arr = np.array(ordered_resource_list)
         board = self.catan.board.ravel().astype(np.float64)
-        board = np.delete(board, np.where(board == 0))  # crop
+        # board = np.delete(board, np.where(board == 0))  # crop
 
         return np.append(resource_arr, board)
 
@@ -141,56 +142,6 @@ class PlayerAI(Player):
             self.r_s.append(reward)
 
             return action, attributes
-
-    def build_settlement(self, coords: tuple, start=False):
-        # examing where I can build a settlement
-        assert coords not in self.settlements, "Building in the same spot!"
-
-        logging.debug(f"Built settlement at : {coords}")
-
-        self.catan.board[coords[0], coords[1]] = self.tag
-        self.settlements.append(coords)
-
-        if not start:
-            # removing resources
-            self.resources[1] -= 1
-            self.resources[2] -= 1
-            self.resources[4] -= 1
-            self.resources[5] -= 1
-
-    def build_road(self, coords: tuple, start=False):
-        assert coords not in self.roads, "Building in the same spot!"
-
-        logging.debug(f"Built road at : {coords}")
-
-        self.catan.board[coords[0], coords[1]] = self.tag
-        self.roads.append(coords)
-        if not start:
-            # removing resources
-            self.resources[1] -= 1
-            self.resources[2] -= 1
-
-            if len(self.roads) >= 5:
-                self.longest_road = self.calculate_longest_road()
-
-    def build_city(self, coords):
-        assert coords not in self.cities, "Building in the same spot!"
-
-        logging.debug(f"Built city at : {coords}")
-
-        self.catan.board[coords[0], coords[1]] = self.tag - 10
-        self.cities.append(coords)
-        self.settlements.remove(coords)
-
-        self.resources[3] -= 3
-        self.resources[4] -= 2
-
-    def trade_with_bank(self, resource_in_resource_out):
-        resource_in = resource_in_resource_out[0]
-        resource_out = resource_in_resource_out[1]
-        self.resources[resource_in] -= 4
-        self.resources[resource_out] += 1
-        logging.debug(f"Trading {resource_in} for {resource_out}")
 
     def reward_matrix(self, action: int):
         reward_matrix = {
@@ -402,6 +353,21 @@ class CatanAI(Catan):
                         self.add_resource(owner_tag, resource_type, resource_num)
 
 
+def softmax(x):
+    zero_indices = np.where(x == 0)
+
+    shiftx = x - np.max(x, axis=0)
+    exps = np.exp(shiftx)
+
+    exps[zero_indices] = 0
+    return exps / np.sum(exps, axis=0)
+
+
+def relu(x):
+    x[x < 0] = 0
+    return x
+
+
 class CatanAITraining:
     # Model_base
     # Hyperparameters
@@ -409,7 +375,7 @@ class CatanAITraining:
     H = 2048  # number of hidden layer 1 neurons
     W = 1024  # number of hidden layer 2 neurons
     batch_size = 5  # every how many episodes to do a param update?
-    episodes = 1000
+    episodes = 10
     learning_rate = 1e-5
     gamma = 0.99  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
@@ -460,14 +426,14 @@ class CatanAITraining:
         # forward pass: Take in board state, return probability of taking action [0,1,2,3]
         # Ne = Neurons in hidden state. As = Action Space
         z1 = self.model["W1"] @ x  # Ne x 483 * 483 x M = Ne x M
-        a1 = self.relu(z1)  # Ne x M
+        a1 = relu(z1)  # Ne x M
 
         z2 = self.model["W2"] @ a1  # Ne x 483 * 483 x M = Ne x M
-        a2 = self.relu(z2)  # Ne x M
+        a2 = relu(z2)  # Ne x M
 
         z3 = self.model["W3"] @ a2  # As x Ne * Ne x M = As x M
         m3 = np.multiply(z3, mask)
-        a3 = self.softmax(m3)  # As x M
+        a3 = softmax(m3)  # As x M
 
         return (
             z1,
@@ -478,15 +444,6 @@ class CatanAITraining:
             a3,
         )  # return probability of taking action [0,1,2,3], and hidden state
 
-    def softmax(self, x):
-        zero_indices = np.where(x == 0)
-
-        shiftx = x - np.max(x, axis=0)
-        exps = np.exp(shiftx)
-
-        exps[zero_indices] = 0
-        return exps / np.sum(exps, axis=0)
-
     def discount_rewards(self, r):
         """take 1D float array of rewards and compute discounted reward"""
         discounted_r = np.zeros_like(r)
@@ -495,10 +452,6 @@ class CatanAITraining:
             running_add = running_add * self.gamma + r[t]
             discounted_r[t] = running_add
         return discounted_r
-
-    def relu(self, x):
-        x[x < 0] = 0
-        return x
 
     def d_relu(self, x):
         return x >= 0
@@ -521,7 +474,7 @@ class CatanAITraining:
 
         return {"W1": dW1, "W2": dW2, "W3": dW3}
 
-    def plot_running_avg(y: list, window=10):
+    def plot_running_avg(self, y: list, window=10):
         average_y = []
         for ind in range(len(y) - window + 1):
             average_y.append(np.mean(y[ind : ind + window]))

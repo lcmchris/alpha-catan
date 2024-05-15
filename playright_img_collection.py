@@ -21,18 +21,29 @@ class Worker:
     def run(self, idx):
         try:
             print("Launched worker in ", threading.current_thread().name)
-            browser = self.tls.playwright.chromium.launch(headless=True)
+            browser = self.tls.playwright.chromium.launch(headless=False)
             context = browser.new_context()
             page = context.new_page()
 
             page.goto("https://colonist.io/")
-            page.click("text=Agree")
-            page.click("text=Play vs Bots")
+            page.get_by_label("Consent", exact=True).click()
+            page.click("text=Lobby")
+            page.click("text=Create Room")
+
+            page.locator("#add-bot-button").nth(1).click()
+            page.locator("#botspeed_settings_right_arrow").click()
+            page.click("text=Start Game")
+            page.wait_for_timeout(3000)
+
+            page.screenshot(path=f"hello{idx}.png")
+
             canvas = page.locator("canvas").nth(0)
             canvas.click()
-            time.sleep(1)
+            page.wait_for_timeout(3000)
 
-            canvas.screenshot(path=f"data/{idx}_playwright_img_collection.png")
+            page.screenshot(path=f"dame{idx}.png")
+
+            canvas.screenshot(path=f"{idx}_playwright_img_collection.png")
             time.sleep(5)
             context.close()
             browser.close()

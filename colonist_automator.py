@@ -3,15 +3,21 @@ from playwright.sync_api import sync_playwright, Locator
 import pathlib
 import cv2 as cv2
 import numpy as np
-from catan_game import Catan
-
-
+from catan_game import Catan, Player
+from catan_ai import CatanAITraining, PlayerAI, PlayerType
+import pickle
+import base64
+from catan_ai import relu, softmax
 
 start_time = time.time()
 
 
+class ColonistIOAutomator(Catan):
+    """
+    Colonist automator automates a game on the colonist.io platform using a pre-build model from catan_ai.
 
-class ColonistIOAutomator(Catan):# constants
+    """
+
     starting_coords = [80, 80]
     x_spacing = 50
     y_1_spacing = 30
@@ -22,55 +28,67 @@ class ColonistIOAutomator(Catan):# constants
     match_method = cv2.TM_CCOEFF_NORMED
     tile_count = 2  # 2 tiles per number
     box_size = (45, 85)
+    # fmt: off
+    # box_coords = {
+    #     (210, 90): (5, 8),(310, 90): (5, 12),(410, 90): (5, 16),
+    #     (160, 180): (9, 6),(260, 180): (9, 10),(360, 180): (9, 14),(460, 180): (9, 18),
+    #     (110, 270): (13, 4),(210, 270): (13, 8),(310, 270): (13, 12),(410, 270): (13, 16),(510, 270): (13, 20),
+    #     (160, 360): (17, 6),(260, 360): (17, 10),(360, 360): (17, 14),(460, 360): (17, 18),
+    #     (210, 470): (21, 8),(310, 470): (21, 12),(410, 470): (21, 16)
+    #     }
+    # ## Flip box_coords:
     box_coords = {
-        (210, 90): (5, 8),        (310, 90): (5, 12),        (410, 90): (5, 16),        (160, 180): (9, 6),
-        (260, 180): (9, 10),        (360, 180): (9, 14),        (460, 180): (9, 18),        (110, 270): (13, 4),
-        (210, 270): (13, 8),        (310, 270): (13, 12),        (410, 270): (13, 16),        (510, 270): (13, 20),
-        (160, 360): (17, 6),        (260, 360): (17, 10),        (360, 360): (17, 14),        (460, 360): (17, 18),
-        (210, 470): (21, 8),        (310, 470): (21, 12),        (410, 470): (21, 16),    }
-    def __init__(self, model_path:str) -> None:
+        ( 90,210): (5, 8),( 90,310): (5, 12),(90,410): (5, 16),
+        ( 180,160): (9, 6),( 180,260): (9, 10),( 180,360): (9, 14),( 180,460): (9, 18),
+        ( 270,110): (13, 4),(270,210): (13, 8),( 270,310): (13, 12),( 270,410): (13, 16),(270,510): (13, 20),
+        ( 360,160): (17, 6),(360,260): (17, 10),( 360,360): (17, 14),( 360,460): (17, 18),
+        ( 470,210): (21, 8),( 470,310): (21, 12),(470,410): (21, 16)
+        }
+
+    # fmt: on
+    selection_spacing = 45
+
+    def __init__(self, model_path: str) -> None:
         super().__init__()
-        self.model = self.load_model_pickle(model_path)
-
-
-        self.settlement_pxl_mapping = {}
-        self.road_pxl_mapping = {}
-
+        self.n_action = 0
         self.pr = sync_playwright().start()
         self.page = self.create_page()
-        self.canvas = self.create_1v1_game()
-        # self.canvas_img = cv2.imdecode(
-        #     np.frombuffer(self.canvas.screenshot(), np.uint8), cv2.IMREAD_GRAYSCALE
-        # )
-        self.board_coords = self.get_board_coords_ocr()
+        self.canvas, self.players, self.players_name = self.create_1v1_game()
+
+        self.canvas_img: cv2.typing.MatLike
+
+        self.take_canvas_img()
+        self.set_board_numbers_ocr()
+        self.set_board_tiles_ocr()
+
+        self.player_automator: PlayerAutomator = self.players[-9]
+
+        self.model = self.load_model_pickle(model_path)
+
+        self.settlement_pxl_to_coords, self.settlement_coords_to_pxl = (
+            self.generate_settlement_pxl_mapping()
+        )
+        self.road_pxl_to_coords, self.road_coords_to_pxl = (
+            self.generate_road_pxl_mapping()
+        )
+
         self.last_messages = self.page.query_selector_all(".message-post")
-        self.users_settlements = {}
+
+        self.players_settlements = {}
         self.wait_for_turn()
 
-    
-    def load_model_pickle(self,rel_model_path:str):
-        parent = pathlib.Path(__file__).resolve()
+    def load_model_pickle(self, rel_model_path: str):
+        parent = pathlib.Path(__file__).parent.resolve()
         model_path = parent.joinpath(rel_model_path)
+        with open(model_path, "rb") as f:
+            model = pickle.load(f)
 
-        return pickle.loads(model_path)
-
-
-    def pick_action(self):
-        
-        x = self.prepro()  # append board state
-        _, _, _, _, _, a3 = self.policy_forward(x, self.action_space)
-
-
-        best_action = np.argmax(a3)
-
-        return self.action_idx_to_action_tuple(best_action)
-    
-    def perform_action(self):
-
-
-
+        return model
 
     def generate_settlement_pxl_mapping(self):
+        settlement_pxl_to_coords = {}
+        settlement_coords_to_pxl = {}
+
         for spt_y, spt_x in self.all_settlement_spots:
             nomarlised_y = (spt_y - 2) / 2
             nomarlised_x = (spt_x - 2) / 2
@@ -80,20 +98,34 @@ class ColonistIOAutomator(Catan):# constants
                 + self.starting_coords[0]
             )
             x_pxl = nomarlised_x * (self.x_spacing) + self.starting_coords[1]
-            self.settlement_pxl_mapping[(spt_y, spt_x)] = (y_pxl, x_pxl)
+            settlement_pxl_to_coords[(y_pxl, x_pxl)] = (spt_y, spt_x)
+            settlement_coords_to_pxl[(spt_y, spt_x)] = (y_pxl, x_pxl)
+
+        return settlement_pxl_to_coords, settlement_coords_to_pxl
 
     def generate_road_pxl_mapping(self):
+        road_pxl_to_coords = {}
+        road_coords_to_pxl = {}
+
         for spt_y, spt_x in self.all_road_spots:
             nomarlised_y = (spt_y - 3) / 2
             nomarlised_x = (spt_x - 3) / 2
             y_pxl = (
-                (self.y_2_spacing / 2 + self.y_1_spacing / 2 if nomarlised_y % 2 == 1 else 0)
+                (
+                    self.y_2_spacing / 2 + self.y_1_spacing / 2
+                    if nomarlised_y % 2 == 1
+                    else 0
+                )
                 + nomarlised_y // 2 * (self.y_2_spacing + self.y_1_spacing)
                 + self.y_1_spacing / 2
                 + self.starting_coords[0]
             )
-            x_pxl = (nomarlised_x * (self.x_spacing) + self.x_spacing / 2) + self.starting_coords[1]
-            self.road_pxl_mapping[(spt_y, spt_x)] = (y_pxl, x_pxl)
+            x_pxl = (
+                nomarlised_x * (self.x_spacing) + self.x_spacing / 2
+            ) + self.starting_coords[1]
+            road_pxl_to_coords[(y_pxl, x_pxl)] = (spt_y, spt_x)
+            road_coords_to_pxl[(spt_y, spt_x)] = (y_pxl, x_pxl)
+        return road_pxl_to_coords, road_coords_to_pxl
 
     def create_page(self):
         browser = self.pr.chromium.launch(headless=False)
@@ -108,192 +140,429 @@ class ColonistIOAutomator(Catan):# constants
 
         self.page.locator("#add-bot-button").nth(1).click()
         self.page.locator("#botspeed_settings_right_arrow").click()
+        self.page.wait_for_timeout(1000)
 
-        self.set_users()
+        players, players_name = self.set_players()
 
         self.page.click("text=Start Game")
-        canvas = None
-        while canvas is None:
-            canvas = self.page.locator("canvas").nth(0)
 
-        return canvas
+        canvas = self.page.locator("canvas").nth(0)
+        self.page.wait_for_url("https://colonist.io/#*")
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(3000)
 
-    def set_users(self):
-        users = self.page.locator("span.room_player_username").all()
+        return canvas, players, players_name
 
-        self.users = {
-            users[i].inner_text().replace(" (You)", ""): i - 10
-            for i in range(len(users))
-            if users[i].inner_text() != "Player"
-        }
-
-    def click_buy(self, coords, selection_spacing=45):
-        if coords in self.all_settlement_spots:
-            mapping = self.settlement_pxl_mapping
-        elif coords in self.all_road_spots:
-            mapping = self.settlement_pxl_mapping
-
-        self.canvas.click(
-            position={
-                "x": mapping[coords][1],
-                "y": mapping[coords][0],
-            }
+    def take_canvas_img(
+        self,
+    ) -> cv2.typing.MatLike:
+        screenshot_bytes = self.canvas.screenshot(
+            path=f"game_images/screenshot_{self.n_action}.png", animations="disabled"
         )
-        self.canvas.click(
-            position={
-                "x": mapping[coords][1],
-                "y": mapping[coords][0] - selection_spacing,
-            }
+        self.canvas_img = cv2.imdecode(
+            np.frombuffer(screenshot_bytes, np.uint8), cv2.IMREAD_COLOR
         )
-        # load graphics
-        time.sleep(1)
+
+    def set_players(self) -> tuple[dict[str, Player], dict[str, int]]:
+        players_query = self.page.locator("span.room_player_username").all()
+
+        players_dict = {}
+        players_name_dict = {}
+
+        for i in range(len(players_query)):
+            player_tag = i - 9
+            if players_query[i].inner_text() != "Player":
+                if " (You)" in players_query[i].inner_text():
+                    player_name = players_query[i].inner_text().replace(" (You)", "")
+                    players_dict[player_tag] = PlayerAutomator(
+                        catan=self, tag=player_tag, player_type=PlayerType.MODEL
+                    )
+                    players_name_dict[player_name] = player_tag
+                else:
+                    player_name = players_query[i].inner_text()
+                    players_dict[player_tag] = Player(catan=self, tag=player_tag)
+                    players_name_dict[player_name] = player_tag
+
+        assert len(players_dict) == 2
+
+        return players_dict, players_name_dict
+
+    def wait_for_turn(self):
+        """
+
+        In vitro state vs actual state
+
+        Which should I trust more?
+        Actual state is more important as it is real
+
+        > Is there anypoint updating the state then? Probably not
+
+
+        Options:
+        - Polling every 3 seconds of new state
+            Check for:
+            - My turn?
+
+        """
+        time_past = 0
+        n_actions = 0
+        while True:
+            self.tally_new_messages()
+
+            if self.is_my_turn(time_past):
+                if self.is_game_start(n_actions=n_actions):
+                    # self.player_automator.player_start()
+                    # action, attributes = self.player_automator.pick_action()
+                    # self.player_automator.perform_action(action, attributes, start=True)
+                    # action, attributes = self.player_automator.pick_action()
+                    # self.player_automator.perform_action(action, attributes, start=True)
+                    pass
+                else:
+                    self.roll_dice()
+                    self.take_canvas_img()
+                    self.loop_templates_ocr()
+
+                    self.action_space = self.player_automator.get_action_space()
+                    action, attributes = self.player_automator.pick_action()
+                    self.player_automator.perform_action(action, attributes)
+                    self.end_turn()
+                    time_past = 0
+
+                    # self.end_turn()
+                    # time_past = 0
+                n_actions += 1
+            else:
+                time_past += 2
+                self.page.wait_for_timeout(2000)
+
+            # self.last_messages = messages
+
+    def is_game_start(self, n_actions):
+        return n_actions < 2
+
+    def is_my_turn(self, time_past):
+        return time_past > 10
+
+    def roll_dice(self):
+        self.page.keyboard.press("Space")
 
     def end_turn(self):
         self.page.keyboard.press("Space")
 
-    def wait_for_turn(self):
-        while True:
-            messages = self.page.locator(".message-post").all()
-            last_msg_cnt = len(self.last_messages)
-            new_msg_cnt = len(messages)
-            if new_msg_cnt > last_msg_cnt:
-                new_messages = messages[last_msg_cnt:new_msg_cnt]
-                for message in new_messages:
-                    self.parse_message(message)
-            else:
-                time.sleep(5)
-            # if rolled(messages[-1]):
+    def tally_new_messages(
+        self,
+    ):
+        messages = self.page.locator(".message-post").all()
+        last_msg_cnt = len(self.last_messages)
+        new_msg_cnt = len(messages)
 
-            self.last_messages = messages
+        if new_msg_cnt > last_msg_cnt:
+            new_messages = messages[last_msg_cnt:new_msg_cnt]
+            for message in new_messages:
+                self.parse_message(message)
 
     def parse_message(self, message: Locator):
-        inner_html = message.inner_html()
+        player_name = self.player_from_msg(message=message)
+        player_tag = self.players_name[player_name]
         if "rolled" in message.inner_text():
             dice_rolled = self.query_rolled(message)
             print(dice_rolled)
+            self._my_turn = True
 
         elif "placed a" in message.inner_text():
-            message_alt_text = message.get_by_alt_text("settlement").is_visible()
-            if message_alt_text:
-                placed_settlement = self.query_settlement(message)
-                print(placed_settlement)
+            if self.is_settlement(message):
+                self.players[player_tag].update_resources_settlement()
+            elif self.is_road(message):
+                self.players[player_tag].update_resources_road()
+            elif self.is_city(message):
+                self.players[player_tag].update_resources_city()
+            else:
+                print(message)
+
+        elif "got" in message.inner_text():
+            self.update_resource(message, player_tag)
+
+    def update_resource(self, message: Locator, player_tag: int):
+        """
+        From `got` images extract out the necessary updates on resources for players.
+        """
+        for resource, r_tag in self.resources.keys():
+            num_resources = len(message.get_by_alt_text(resource).all())
+            self.add_resource(
+                owner_tag=player_tag, resource_type=r_tag, resource_num=num_resources
+            )
 
     def query_rolled(self, message: Locator) -> list[int, int]:
         dices = ["dice_1", "dice_2", "dice_3", "dice_4", "dice_5", "dice_6"]
         dice_rolled = []
         for dice in dices:
-            if matchs := message.query_selector_all(f'img[alt="{dice}"]') is not None:
+            if (matchs := message.get_by_alt_text(dice).all()) is not None:
                 for _ in matchs:
                     dice_rolled.append(dice)
         assert len(dice_rolled) == 2
         return dice_rolled
 
-    def query_settlement(self, message: Locator) -> list[int, int]:
-        for user in self.users:
-            if user in message.inner_text():
-                self.users_settlements[user] = self.users_settlements.get(user, 0) + 1
+    def player_from_msg(self, message: Locator):
+        for player_name in self.players_name:
+            if player_name in message.inner_text():
+                return player_name
+
+    def is_settlement(self, message: Locator):
+        return message.get_by_alt_text("settlement").is_visible()
+
+    def is_road(self, message: Locator):
+        return message.get_by_alt_text("road").is_visible()
+
+    def is_city(self, message: Locator):
+        return message.get_by_alt_text("city").is_visible()
 
     def get_center(self, coords, h, w):
         return tuple(map(sum, zip(coords, (h / 2, w / 2))))
 
-    def match_coords(
-        self,
-        coord,
-    
-    ):
-        for x, y in self.box_coords.keys():
+    def match_coords(self, pxl, mapping: dict, size=(25, 25)):
+        for y, x in mapping.keys():
             if (
-                x - self.box_size[0] < coord[0] < x + self.box_size[0]
-                and y - self.box_size[1] < coord[1] < y + self.box_size[1]
+                x - size[0] < pxl[1] < x + size[0]
+                and y - size[1] < pxl[0] < y + size[1]
             ):
-                return self.box_coords[(x, y)]
-        raise Exception("No match found")
+                return mapping[(y, x)]
 
-    def get_board_coords_ocr(self):
-        numbers = {
-                    2: 1,
-                    3: 2,
-                    4: 2,
-                    5: 2,
-                    6: 2,
-                    8: 2,
-                    9: 2,
-                    10: 2,
-                    11: 2,
-                    12: 1,
-                    }
-        numbers_coords = {number: [] for number in numbers}
+        raise KeyError
 
-        for tile, tile_count in numbers.items():
+    def set_board_numbers_ocr(self):
+        canvas_img = self.canvas_img.copy()
+
+        for tile, tile_count in self.number_tokens.items():
             template = cv2.imread(
-                f"image-matching/tile_{str(tile)}.png", cv2.IMREAD_GRAYSCALE
+                f"image-matching/tile_{str(tile)}.png", cv2.IMREAD_COLOR
             )
-            h, w = template.shape
+            h, w = template.shape[:2]
 
             for count in range(tile_count):
-                res = cv2.matchTemplate(self.canvas_img, template, self.match_method)
+                res = cv2.matchTemplate(canvas_img, template, self.match_method)
                 min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-                numbers_coords[self.match_coords(
-                        self.get_center(max_loc, h, w), self.box_coords, self.box_size
-                    )].append(
-                    tile
-                )
 
-        tile_tyoe_coords = {number: [] for number in self.resource_cards}
+                canvas_img[
+                    max_loc[1] - 1 : max_loc[1] + h + 1,
+                    max_loc[0] - 1 : max_loc[0] + w + 1,
+                ] = 0
 
-        for tile, tile_count in numbers.items():
+                for attempt in range(3):
+                    try:
+                        loc_yx = (max_loc[1], max_loc[0])
+                        coord = self.match_coords(
+                            self.get_center(loc_yx, h, w),
+                            mapping=self.box_coords,
+                            size=self.box_size,
+                        )
+                    except KeyError:
+                        self.page.wait_for_timeout(3000)
+                        self.take_canvas_img()
+                    else:
+                        break
+
+                if coord is None:
+                    raise Exception("No match found")
+
+                else:
+                    (y, x) = coord
+
+                assert coord in self.center_coords
+                self.board[y + 1, x] = tile
+
+    def set_board_tiles_ocr(self):
+        canvas_img = self.canvas_img.copy()
+
+        for tile, tile_count in self.resource_cards.items():
             template = cv2.imread(
-                f"image-matching/type_{str(tile)}.png", cv2.IMREAD_GRAYSCALE
+                f"image-matching/type_{str(tile)}.png", cv2.IMREAD_COLOR
             )
-            h, w = template.shape
+            h, w = template.shape[:2]
 
             for count in range(tile_count):
-                res = cv2.matchTemplate(self.canvas_img, template, self.match_method)
+                res = cv2.matchTemplate(canvas_img, template, self.match_method)
                 min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-                tile_tyoe_coords[self.match_coords(
-                        self.get_center(max_loc, h, w), self.box_coords, self.box_size
-                    )].append(tile
-                    
+                canvas_img[
+                    max_loc[1] - 1 : max_loc[1] + h + 1,
+                    max_loc[0] - 1 : max_loc[0] + w + 1,
+                ] = 0
+                loc_yx = (max_loc[1], max_loc[0])
+                coord = self.match_coords(
+                    self.get_center(loc_yx, h, w),
+                    mapping=self.box_coords,
+                    size=self.box_size,
                 )
+                (y, x) = coord
+                assert coord in self.center_coords
+                self.board[y - 1, x] = tile
 
-        
-        return numbers_coords,tile_tyoe_coords
-    
-    def generate_board(self):
-        arr = self.empty_board
-
-        numbers_coords, tile_tyoe_coords = self.get_board_coords_ocr()
-
-
-
-        for coord in self.center_coords:
-            x,y = coord
-            number = numbers_coords[coord]
-            resource = tile_tyoe_coords[coord]
-            arr[y, x] = 50  # Knight reference
-            arr[y - 1, x] = resource
-            arr[y + 1, x] = number
-
-        return arr
-
-    def generate_players(self):
-        '''
-        Always start with myself and rotate clockwise.
-        '''
-        return [Catan.Player, Catan.Player]
-    
-
-
-
-        
-
-    def get_settlement_ocr(self, message: Locator) -> list[int, int]:
+    def loop_templates_ocr(
+        self,
+    ) -> list[int, int]:
         """Get the coordinates of the current board"""
-        pass
 
-class PlayerAutomator(Player):
+        ## Red
 
-    
+        for player in ["red", "blue"]:
+            for match_type in ["city", "settlement", "road"]:
+                img = self.canvas_img.copy()
+                if player == "red":
+                    player_tag = -9
+                elif player == "blue":
+                    player_tag = -8
+
+                if match_type == "city":
+                    count = 1
+                    player_tag -= 10
+                    mapping = self.settlement_pxl_to_coords
+
+                elif match_type == "settlement":
+                    count = 1
+                    mapping = self.settlement_pxl_to_coords
+                elif match_type == "road":
+                    count = 3
+                    mapping = self.road_pxl_to_coords
+
+                for i in range(count):
+                    template = cv2.imread(
+                        f"image-matching/{match_type}_{player}_{i}.png",
+                        cv2.IMREAD_COLOR,
+                    )
+                    self.update_board_ocr(
+                        img=img,
+                        template=template,
+                        player_tag=player_tag,
+                        mapping=mapping,
+                    )
+
+                    self.print_board()
+
+    def update_board_ocr(
+        self,
+        img: cv2.typing.MatLike,
+        template: cv2.typing.MatLike,
+        player_tag: int,
+        mapping: dict,
+    ) -> list[int, int]:
+        h, w = template.shape[:2]
+        while True:
+            result = cv2.matchTemplate(img, template, self.match_method)
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+            if max_val < 0.95:
+                break
+            loc_yx = (max_loc[1], max_loc[0])
+            coord = self.match_coords(self.get_center(loc_yx, h, w), mapping=mapping)
+            (y, x) = coord
+            self.board[y, x] = player_tag
+            img[
+                max_loc[1] - 15 : max_loc[1] + h + 15,
+                max_loc[0] - 15 : max_loc[0] + w + 15,
+            ] = 0
+
+            cv2.imshow("image", img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+
+class PlayerAutomator(PlayerAI):
+    def __init__(self, catan: ColonistIOAutomator, tag, player_type):
+        super().__init__(catan=catan, tag=tag, player_type=PlayerType.MODEL)
+        self.catan: ColonistIOAutomator
+
+    def policy_forward(self, x, mask):
+        # forward pass: Take in board state, return probability of taking action [0,1,2,3]
+        # Ne = Neurons in hidden state. As = Action Space
+        z1 = self.catan.model["W1"] @ x  # Ne x 483 * 483 x M = Ne x M
+        a1 = relu(z1)  # Ne x M
+
+        z2 = self.catan.model["W2"] @ a1  # Ne x 483 * 483 x M = Ne x M
+        a2 = relu(z2)  # Ne x M
+
+        z3 = self.catan.model["W3"] @ a2  # As x Ne * Ne x M = As x M
+        m3 = np.multiply(z3, mask)
+        a3 = softmax(m3)  # As x M
+
+        return (
+            z1,
+            a1,
+            z2,
+            a2,
+            z3,
+            a3,
+        )  # return probability of taking action [0,1,2,3], and hidden state
+
+    def pick_action(self):
+        x = self.prepro()  # append board state
+        z1, a1, z2, a2, z3, a3 = self.policy_forward(x, self.action_space)
+
+        action_idx = np.random.choice(np.arange(a3.size), p=a3)
+        action, attributes = self.action_idx_to_action_tuple(action_idx)
+
+        return action, attributes
+
+    def perform_action(self, action, attributes, start=False):
+        if action == 0:
+            pass
+        elif action == 1:
+            self.buy_road(attributes)
+            self.build_road(attributes, start)
+        elif action == 2:
+            self.buy_settlement(attributes)
+            self.build_settlement(attributes, start)
+        elif action == 3:
+            self.build_city(attributes)
+        elif action == 4:
+            self.trade_with_bank(attributes)
+        elif action == 5:
+            self.discard_resources(attributes)
+        else:
+            raise ValueError("action not in action space")
+
+    def click_buy(
+        self,
+        mapping: dict,
+        coords: tuple,
+    ):
+        self.catan.canvas.click(
+            position={
+                "x": mapping[coords][1],
+                "y": mapping[coords][0],
+            }
+        )
+        self.catan.canvas.click(
+            position={
+                "x": mapping[coords][1],
+                "y": mapping[coords][0] - self.catan.selection_spacing,
+            }
+        )
+
+        self.catan.page.wait_for_timeout(1000)
+
+    def buy_settlement(
+        self,
+        coords: tuple,
+    ):
+        if coords in self.catan.all_settlement_spots:
+            mapping = self.catan.settlement_coords_to_pxl
+            self.click_buy(mapping, coords)
+
+        else:
+            raise ValueError(f"Incorrect buying coords: {coords}")
+
+    def buy_road(self, coords: tuple):
+        if coords in self.catan.all_road_spots:
+            mapping = self.catan.road_coords_to_pxl
+            self.click_buy(mapping, coords)
+        else:
+            raise ValueError(f"Incorrect buying coords: {coords}")
+
+    def get_current_board_state(self):
+        # get board state
+        self.catan.take_canvas_img()
+
+        self.catan.set_board_tiles_ocr()
+
+
 # find text on page
 if __name__ == "__main__":
-    colonistUI = ColonistIOAutomator()
+    colonistUI = ColonistIOAutomator(model_path="catan_model.pickle")
