@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import random
 import numpy as np
 import logging
@@ -84,7 +83,7 @@ class Player:
             existing_roads.append(next_road)
             return self.depth_search_longest_road(road, existing_roads, next_roads)
 
-    def get_action_space(self, start=None, attributes=None):
+    def get_action_space(self, situation=None, attributes=None):
         """
         return a list of actions that the player can take
         """
@@ -95,15 +94,15 @@ class Player:
             self.potential_road = self.get_potential_road()
             self.potential_trade = self.get_potential_trade()
 
-        if start == "settlement":
+        if situation == "settlement":
             self.potential_settlement = self.get_potential_settlement()
             for settlement in self.potential_settlement:
                 action_space_list.append((2, settlement))
-        elif start == "road":
+        elif situation == "road":
             self.potential_road = self.get_potential_road(attributes)
             for road in self.potential_road:
                 action_space_list.append((1, road))
-        elif start == "discard":
+        elif situation == "discard":
             for resource, count in self.resources.items():
                 if count > 0:
                     action_space_list.append((5, resource))
@@ -193,13 +192,13 @@ class Player:
 
         return list_of_potential_trades
 
-    def perform_action(self, action, attributes, start=False):
+    def perform_action(self, action, attributes, situation=False):
         if action == 0:
             pass
         elif action == 1:
-            self.build_road(attributes, start)
+            self.build_road(attributes, situation)
         elif action == 2:
-            self.build_settlement(attributes, start)
+            self.build_settlement(attributes, situation)
         elif action == 3:
             self.build_city(attributes)
         elif action == 4:
@@ -209,7 +208,7 @@ class Player:
         else:
             raise ValueError("action not in action space")
 
-    def build_settlement(self, coords: tuple, start=False):
+    def build_settlement(self, coords: tuple, situation=False):
         # examing where I can build a settlement
         assert coords not in self.settlements, "Building in the same spot!"
 
@@ -218,7 +217,7 @@ class Player:
         self.catan.board[coords[0], coords[1]] = self.tag
         self.settlements.append(coords)
 
-        if not start:
+        if not situation:
             # removing resources
             self.update_resources_settlement()
 
@@ -228,14 +227,14 @@ class Player:
         self.resources[4] -= 1
         self.resources[5] -= 1
 
-    def build_road(self, coords: tuple, start=False):
+    def build_road(self, coords: tuple, situation=False):
         assert coords not in self.roads, "Building in the same spot!"
 
         logging.debug(f"Built road at : {coords}")
 
         self.catan.board[coords[0], coords[1]] = self.tag
         self.roads.append(coords)
-        if not start:
+        if not situation:
             self.update_resources_settlement()
 
             if len(self.roads) >= 5:
@@ -266,6 +265,42 @@ class Player:
         self.resources[resource_in] -= 4
         self.resources[resource_out] += 1
         logging.debug(f"Trading {resource_in} for {resource_out}")
+
+    def place_robber(self, coords):
+        """Place robber at coords and steal resources from opponent"""
+        self.robber = coords
+        logging.debug(f"Placed robber at : {coords}")
+        (y, x) = coords
+
+        list_of_potential_owners = [
+            [y - 4, x],
+            [y + 2, x],
+            [y, x + 2],
+            [y, x - 2],
+            [y - 2, x + 2],
+            [y - 2, x - 2],
+        ]
+        for y, x in list_of_potential_owners:
+            potential_opponent = self.catan.board[y, x]
+            if potential_opponent != -1 and potential_opponent != self.tag:
+                opponent = potential_opponent
+                if self.catan.players[opponent].resources > 0:
+                    available_resource = random.choice(
+                        self.catan.players[opponent].available_resources()
+                    )
+                    self.catan.players[opponent].resources[available_resource] -= 1
+                    self.catan.players[self.tag].resources[available_resource] += 1
+
+    def available_resources(self):
+        available_resources = []
+        for i in range(1, 6):
+            if self.resources[i] > 0:
+                available_resources.append(i)
+
+        return available_resources
+
+    def update_resources(self, resource_tag: int, number: int):
+        self.resources[resource_tag] += number
 
     def get_potential_settlement(self):
         """
@@ -403,7 +438,7 @@ class Catan:
         "cities": 4,
         "roads": 15,
     }
-    resources = {"brick": 1, "lumber": 2, "ore": 3, "grain": 4, "wool": 5, "desert": 6}
+    resources_tag = {"brick": 1, "lumber": 2, "ore": 3, "grain": 4, "wool": 5}
     resource_card = {
         # name, count, tile_count
         1: ["brick", 19],
@@ -502,6 +537,9 @@ class Catan:
     def get_discards(self):
         return [1, 2, 3, 4, 5]
 
+    def get_robber_spots(self):
+        return self.center_coords
+
     def generate_all_action_space(self) -> list[int, tuple]:
         """
         0, 0 :: Dim = 1
@@ -510,7 +548,7 @@ class Catan:
         3, {list of all cities} :: Dim = 2*(3+4+4+5+5+6) = 54
         4, {list of all trades} :: Dim = (4 * 5) = 20
         5, {list of discards} :: Dim = (5 * 1) = 5
-        Total dim = 201
+        6, {list of robber places} :: Dim = (3+4+5+4+3) = 19
         """
 
         action_space = {
@@ -520,6 +558,7 @@ class Catan:
             3: self.get_settment_spots(),  # city
             4: self.get_trades(),  # trade
             5: self.get_discards(),  # discards
+            6: self.get_robber_spots(), #robbers
         }
         flatten_action_space = [
             (action_index, potential_action)

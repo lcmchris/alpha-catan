@@ -72,14 +72,15 @@ class PlayerAI(Player):
 
     def discard_resources_random(self):
         while sum(self.resources.values()) > 7:
-            self.resources[random.randint(1, 5)] -= 1
+            self.resources[random.choice(self.available_resources())] -= 1
 
     def discard_resources_model(self):
-        while sum(self.resources.values()) > 7:
+        half_resources = sum(self.resources.values()) // 2 + 1
+        while sum(self.resources.values()) > half_resources:
             # get action space, pick random action, perform action. Repeat until all actions are done or hits nothing action.
-            self.action_space = self.get_action_space(start="discard")
+            self.action_space = self.get_action_space(situation="discard")
             action, attributes = self.pick_action()
-            logging.debug(f"Action: {action}, Attributes: {attributes}")
+            logging.debug(f"Disard Action: {action}, Attributes: {attributes}")
             self.perform_action(action, attributes)
 
     def prepro(self):
@@ -185,14 +186,16 @@ class PlayerAI(Player):
         logging.debug(f"<-- Player {self.tag} -->")
 
         # 1. build settlement
-        self.action_space = self.get_action_space(start="settlement")
+        self.action_space = self.get_action_space(situation="settlement")
         action, attributes = self.pick_action()
-        self.perform_action(action, attributes, start=True)
+        self.perform_action(action, attributes, situation=True)
 
         # 2. build road
-        self.action_space = self.get_action_space(start="road", attributes=attributes)
+        self.action_space = self.get_action_space(
+            situation="road", attributes=attributes
+        )
         action, attributes = self.pick_action()
-        self.perform_action(action, attributes, start=True)
+        self.perform_action(action, attributes, situation=True)
 
 
 class CatanAI(Catan):
@@ -308,7 +311,7 @@ class CatanAI(Catan):
 
         return arr
 
-    def board_turn(self):
+    def board_turn(self, player_tag=int):
         """
         roll dice and deliver resources
         """
@@ -316,6 +319,8 @@ class CatanAI(Catan):
         logging.debug(f"Rolled: {roll - 10}")
 
         if roll == 17:
+            self.players[player_tag].place_robber
+
             # need to cut resources by half
             for player in self.players.values():
                 player.discard_resources_turn()
@@ -375,7 +380,7 @@ class CatanAITraining:
     H = 2048  # number of hidden layer 1 neurons
     W = 1024  # number of hidden layer 2 neurons
     batch_size = 5  # every how many episodes to do a param update?
-    episodes = 10
+    episodes = 1000
     learning_rate = 1e-5
     gamma = 0.99  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
@@ -502,7 +507,7 @@ class CatanAITraining:
 
                 for player_tag, player in catan.players.items():
                     # Phase 1: roll dice and get resources
-                    catan.board_turn()
+                    catan.board_turn(player_tag)
                     # Phase 2: player performs actions
                     player.player_preturn_debug()
                     player.player_turn()

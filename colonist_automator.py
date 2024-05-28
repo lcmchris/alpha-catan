@@ -6,8 +6,8 @@ import numpy as np
 from catan_game import Catan, Player
 from catan_ai import CatanAITraining, PlayerAI, PlayerType
 import pickle
-import base64
 from catan_ai import relu, softmax
+import logging
 
 start_time = time.time()
 
@@ -29,14 +29,6 @@ class ColonistIOAutomator(Catan):
     tile_count = 2  # 2 tiles per number
     box_size = (45, 85)
     # fmt: off
-    # box_coords = {
-    #     (210, 90): (5, 8),(310, 90): (5, 12),(410, 90): (5, 16),
-    #     (160, 180): (9, 6),(260, 180): (9, 10),(360, 180): (9, 14),(460, 180): (9, 18),
-    #     (110, 270): (13, 4),(210, 270): (13, 8),(310, 270): (13, 12),(410, 270): (13, 16),(510, 270): (13, 20),
-    #     (160, 360): (17, 6),(260, 360): (17, 10),(360, 360): (17, 14),(460, 360): (17, 18),
-    #     (210, 470): (21, 8),(310, 470): (21, 12),(410, 470): (21, 16)
-    #     }
-    # ## Flip box_coords:
     box_coords = {
         ( 90,210): (5, 8),( 90,310): (5, 12),(90,410): (5, 16),
         ( 180,160): (9, 6),( 180,260): (9, 10),( 180,360): (9, 14),( 180,460): (9, 18),
@@ -62,6 +54,7 @@ class ColonistIOAutomator(Catan):
         self.set_board_tiles_ocr()
 
         self.player_automator: PlayerAutomator = self.players[-9]
+        self.player_automator.embargo_opponent()
 
         self.model = self.load_model_pickle(model_path)
 
@@ -74,8 +67,7 @@ class ColonistIOAutomator(Catan):
 
         self.last_messages = self.page.query_selector_all(".message-post")
 
-        self.players_settlements = {}
-        self.wait_for_turn()
+        self.play_game()
 
     def load_model_pickle(self, rel_model_path: str):
         parent = pathlib.Path(__file__).parent.resolve()
@@ -187,7 +179,7 @@ class ColonistIOAutomator(Catan):
 
         return players_dict, players_name_dict
 
-    def wait_for_turn(self):
+    def play_game(self):
         """
 
         In vitro state vs actual state
@@ -207,41 +199,46 @@ class ColonistIOAutomator(Catan):
         time_past = 0
         n_actions = 0
         while True:
-            self.tally_new_messages()
-
-            if self.is_my_turn(time_past):
-                if self.is_game_start(n_actions=n_actions):
-                    # self.player_automator.player_start()
-                    # action, attributes = self.player_automator.pick_action()
-                    # self.player_automator.perform_action(action, attributes, start=True)
-                    # action, attributes = self.player_automator.pick_action()
-                    # self.player_automator.perform_action(action, attributes, start=True)
-                    pass
+            time_past += 1
+            self.page.wait_for_timeout(2000)
+            self.get_game_state()
+                    
+            if self.is_my_turn():
+                if len(self.player_automator.settlements) < 2:
+                    self.player_automator.player_start()
                 else:
                     self.roll_dice()
-                    self.take_canvas_img()
-                    self.loop_templates_ocr()
+                    action = None
+                    while action != 0:
+                        # get action space, pick random action, perform action. Repeat until all actions are done or hits nothing action.
+                        self.player_automator.action_space = self.player_automator.get_action_space()
+                        action, attributes = self.player_automator.pick_action()
+                        logging.debug(f"Action: {action}, Attributes: {attributes}")
+                        self.player_automator.perform_action(action, attributes)
+                        if action != 0:
+                            self.get_game_state()
 
-                    self.action_space = self.player_automator.get_action_space()
-                    action, attributes = self.player_automator.pick_action()
-                    self.player_automator.perform_action(action, attributes)
                     self.end_turn()
-                    time_past = 0
 
-                    # self.end_turn()
-                    # time_past = 0
                 n_actions += 1
-            else:
-                time_past += 2
-                self.page.wait_for_timeout(2000)
 
-            # self.last_messages = messages
+    def get_game_state(self):
+        self.tally_new_messages()
+        self.take_canvas_img()
+        self.loop_templates_ocr()
+
 
     def is_game_start(self, n_actions):
         return n_actions < 2
 
-    def is_my_turn(self, time_past):
-        return time_past > 10
+    def is_my_turn(self):
+        
+        pxl_at_coord = self.canvas_img[600, 680]
+        if  np.array_equal(pxl_at_coord, np.array([242, 248, 250])):
+            return True
+        else:
+            return False
+        
 
     def roll_dice(self):
         self.page.keyboard.press("Space")
@@ -260,37 +257,47 @@ class ColonistIOAutomator(Catan):
             new_messages = messages[last_msg_cnt:new_msg_cnt]
             for message in new_messages:
                 self.parse_message(message)
+        
+        self.last_messages = messages
 
     def parse_message(self, message: Locator):
+
         player_name = self.player_from_msg(message=message)
-        player_tag = self.players_name[player_name]
+        try:
+            player_tag = self.players_name[player_name]
+        except KeyError:
+            pass
+
         if "rolled" in message.inner_text():
             dice_rolled = self.query_rolled(message)
-            print(dice_rolled)
-            self._my_turn = True
+            if dice_rolled == 7 and sum(self.player_automator.resources.values()) > 7:
+                self.player_automator.discard_resources_model()
 
         elif "placed a" in message.inner_text():
-            if self.is_settlement(message):
+            if self.is_settlement(message) and len(self.players[player_tag].settlements) > 2:
                 self.players[player_tag].update_resources_settlement()
-            elif self.is_road(message):
+            elif self.is_road(message) and len(self.players[player_tag].roads) > 2:
                 self.players[player_tag].update_resources_road()
             elif self.is_city(message):
                 self.players[player_tag].update_resources_city()
             else:
                 print(message)
 
-        elif "got" in message.inner_text():
-            self.update_resource(message, player_tag)
+        elif "got" in message.inner_text() or "received starting resources" in message.inner_text():
+            for resource, r_tag in self.resources_tag.items():
+                num_resources = len(message.get_by_alt_text(resource).all())
+                if num_resources> 0:
+                    self.players[player_tag].update_resources(r_tag,num_resources)
+        
+        elif "gave bank" in message.inner_text() and "and took" in message.inner_text():
+            
+            
+            for resource, r_tag in self.resources_tag.items():
+                all = message.get_by_alt_text(resource).all()
+            
 
-    def update_resource(self, message: Locator, player_tag: int):
-        """
-        From `got` images extract out the necessary updates on resources for players.
-        """
-        for resource, r_tag in self.resources.keys():
-            num_resources = len(message.get_by_alt_text(resource).all())
-            self.add_resource(
-                owner_tag=player_tag, resource_type=r_tag, resource_num=num_resources
-            )
+
+
 
     def query_rolled(self, message: Locator) -> list[int, int]:
         dices = ["dice_1", "dice_2", "dice_3", "dice_4", "dice_5", "dice_6"]
@@ -301,6 +308,7 @@ class ColonistIOAutomator(Catan):
                     dice_rolled.append(dice)
         assert len(dice_rolled) == 2
         return dice_rolled
+    
 
     def player_from_msg(self, message: Locator):
         for player_name in self.players_name:
@@ -402,7 +410,6 @@ class ColonistIOAutomator(Catan):
         """Get the coordinates of the current board"""
 
         ## Red
-
         for player in ["red", "blue"]:
             for match_type in ["city", "settlement", "road"]:
                 img = self.canvas_img.copy()
@@ -435,7 +442,6 @@ class ColonistIOAutomator(Catan):
                         mapping=mapping,
                     )
 
-                    self.print_board()
 
     def update_board_ocr(
         self,
@@ -451,6 +457,9 @@ class ColonistIOAutomator(Catan):
             if max_val < 0.95:
                 break
             loc_yx = (max_loc[1], max_loc[0])
+            
+            logging.info(f"Found match {template} at {loc_yx} , player {player_tag}")
+
             coord = self.match_coords(self.get_center(loc_yx, h, w), mapping=mapping)
             (y, x) = coord
             self.board[y, x] = player_tag
@@ -459,9 +468,9 @@ class ColonistIOAutomator(Catan):
                 max_loc[0] - 15 : max_loc[0] + w + 15,
             ] = 0
 
-            cv2.imshow("image", img)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            # cv2.imshow("image", img)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
 
 
 class PlayerAutomator(PlayerAI):
@@ -493,22 +502,20 @@ class PlayerAutomator(PlayerAI):
 
     def pick_action(self):
         x = self.prepro()  # append board state
-        z1, a1, z2, a2, z3, a3 = self.policy_forward(x, self.action_space)
+        z1, a1, z2, a2, z3, a3 = self.policy_forward(x=x, mask=self.action_space)
 
-        action_idx = np.random.choice(np.arange(a3.size), p=a3)
+        action_idx = np.argmax(a3)  # pick action with highest
         action, attributes = self.action_idx_to_action_tuple(action_idx)
 
         return action, attributes
 
-    def perform_action(self, action, attributes, start=False):
+    def perform_action(self, action, attributes, situation=False):
         if action == 0:
             pass
         elif action == 1:
-            self.buy_road(attributes)
-            self.build_road(attributes, start)
+            self.build_road(attributes)
         elif action == 2:
-            self.buy_settlement(attributes)
-            self.build_settlement(attributes, start)
+            self.build_settlement(attributes)
         elif action == 3:
             self.build_city(attributes)
         elif action == 4:
@@ -525,44 +532,55 @@ class PlayerAutomator(PlayerAI):
     ):
         self.catan.canvas.click(
             position={
-                "x": mapping[coords][1],
                 "y": mapping[coords][0],
+                "x": mapping[coords][1],
             }
         )
+        self.catan.page.wait_for_timeout(1000)
         self.catan.canvas.click(
             position={
-                "x": mapping[coords][1],
                 "y": mapping[coords][0] - self.catan.selection_spacing,
+                "x": mapping[coords][1],
             }
         )
 
         self.catan.page.wait_for_timeout(1000)
 
-    def buy_settlement(
+    def build_settlement(
         self,
         coords: tuple,
     ):
-        if coords in self.catan.all_settlement_spots:
-            mapping = self.catan.settlement_coords_to_pxl
-            self.click_buy(mapping, coords)
-
-        else:
+        if coords not in self.catan.all_settlement_spots:
             raise ValueError(f"Incorrect buying coords: {coords}")
+        mapping = self.catan.settlement_coords_to_pxl
+        self.click_buy(mapping, coords)
+        self.settlements.append(coords)
 
-    def buy_road(self, coords: tuple):
+    def build_road(self, coords: tuple):
         if coords in self.catan.all_road_spots:
             mapping = self.catan.road_coords_to_pxl
             self.click_buy(mapping, coords)
         else:
             raise ValueError(f"Incorrect buying coords: {coords}")
-
-    def get_current_board_state(self):
-        # get board state
-        self.catan.take_canvas_img()
-
-        self.catan.set_board_tiles_ocr()
+        
+        self.roads.append(coords)
 
 
-# find text on page
+
+    def embargo_opponent(self):
+        opponent_icon_pxl =(560,720)
+        self.catan.canvas.click(
+            position={
+                "y": opponent_icon_pxl[0],
+                "x": opponent_icon_pxl[1],
+            }
+        )
+        self.catan.page.click("text=Embargo Player")
 if __name__ == "__main__":
+    logging.basicConfig(
+        format="%(message)s",
+        level=logging.DEBUG,
+        # filename=logname,
+        # filemode="w",
+    )
     colonistUI = ColonistIOAutomator(model_path="catan_model.pickle")
