@@ -2,6 +2,8 @@ from __future__ import annotations
 import random
 import numpy as np
 import logging
+from enum import Enum
+from collections import Counter
 
 
 np.set_printoptions(edgeitems=30, linewidth=1000000)
@@ -9,6 +11,16 @@ np.set_printoptions(edgeitems=30, linewidth=1000000)
 
 def arr_to_tuple(arr):
     return [tuple(list) for list in arr.tolist()]
+
+
+class Action(Enum):
+    PASS: int = 0
+    ROAD: int = 1
+    SETTLEMENT: int = 2
+    CITY: int = 3
+    TRADE: int = 4
+    DISCARD: int = 5
+    ROBBER: int = 6
 
 
 class Player:
@@ -42,7 +54,7 @@ class Player:
         self.potential_road = []
         self.potential_trade = []
         self.points = 0
-        self.actions_taken = []
+        self.actions_taken = [Action]
         self.reward_sum = 0
 
     def recalc_points(self):
@@ -83,7 +95,7 @@ class Player:
             existing_roads.append(next_road)
             return self.depth_search_longest_road(road, existing_roads, next_roads)
 
-    def get_action_space(self, situation=None, attributes=None):
+    def get_action_space(self, situation: Action = None, attributes=None):
         """
         return a list of actions that the player can take
         """
@@ -94,28 +106,32 @@ class Player:
             self.potential_road = self.get_potential_road()
             self.potential_trade = self.get_potential_trade()
 
-        if situation == "settlement":
+        if situation == Action.SETTLEMENT:
             self.potential_settlement = self.get_potential_settlement()
             for settlement in self.potential_settlement:
-                action_space_list.append((2, settlement))
-        elif situation == "road":
+                action_space_list.append((Action.SETTLEMENT, settlement))
+        elif situation == Action.ROAD:
             self.potential_road = self.get_potential_road(attributes)
             for road in self.potential_road:
-                action_space_list.append((1, road))
-        elif situation == "discard":
+                action_space_list.append((Action.ROAD, road))
+        elif situation == Action.DISCARD:
             for resource, count in self.resources.items():
                 if count > 0:
-                    action_space_list.append((5, resource))
+                    action_space_list.append((Action.DISCARD, resource))
+        elif situation == Action.ROBBER:
+            for center_coord in self.catan.center_coords:
+                action_space_list.append((Action.ROBBER, center_coord))
+        elif situation is not None and not isinstance(situation, Action):
+            raise Exception("Invalid situation")
         else:
-            # leaving development card later
-            action_space_list.append((0, None))
+            action_space_list.append((Action.PASS, None))
 
             if (self.resources[1] >= 1 and self.resources[2] >= 1) and len(
                 self.roads
             ) < self.catan.max_properties["roads"]:
                 self.potential_road = self.get_potential_road()
                 for road in self.potential_road:
-                    action_space_list.append((1, road))
+                    action_space_list.append((Action.ROAD, road))
 
             if (
                 self.resources[1] >= 1
@@ -125,14 +141,14 @@ class Player:
             ) and len(self.settlements) < self.catan.max_properties["settlements"]:
                 self.potential_settlement = self.get_potential_settlement()
                 for settlement in self.potential_settlement:
-                    action_space_list.append((2, settlement))
+                    action_space_list.append((Action.SETTLEMENT, settlement))
 
             if (self.resources[3] >= 3 and self.resources[4] >= 2) and len(
                 self.cities
             ) < self.catan.max_properties["cities"]:
                 self.potential_city = self.get_potential_city()
                 for city in self.potential_city:
-                    action_space_list.append((3, city))
+                    action_space_list.append((Action.CITY, city))
 
             if (
                 self.resources[1] >= 4
@@ -143,7 +159,7 @@ class Player:
             ):
                 self.potential_trade = self.get_potential_trade()
                 for trade in self.potential_trade:
-                    action_space_list.append((4, trade))
+                    action_space_list.append((Action.TRADE, trade))
 
         action_space = self.action_space_list_to_action_arr(action_space_list)
         logging.debug(action_space)
@@ -192,23 +208,25 @@ class Player:
 
         return list_of_potential_trades
 
-    def perform_action(self, action, attributes, situation=False):
-        if action == 0:
+    def perform_action(self, action: Action, attributes, remove_resources=True):
+        if action == Action.PASS:
             pass
-        elif action == 1:
-            self.build_road(attributes, situation)
-        elif action == 2:
-            self.build_settlement(attributes, situation)
-        elif action == 3:
+        elif action == Action.ROAD:
+            self.build_road(attributes, remove_resources)
+        elif action == Action.SETTLEMENT:
+            self.build_settlement(attributes, remove_resources)
+        elif action == Action.CITY:
             self.build_city(attributes)
-        elif action == 4:
+        elif action == Action.TRADE:
             self.trade_with_bank(attributes)
-        elif action == 5:
+        elif action == Action.DISCARD:
             self.discard_resources(attributes)
+        elif action == Action.ROBBER:
+            self.place_robber(attributes)
         else:
             raise ValueError("action not in action space")
 
-    def build_settlement(self, coords: tuple, situation=False):
+    def build_settlement(self, coords: tuple, remove_resources=True):
         # examing where I can build a settlement
         assert coords not in self.settlements, "Building in the same spot!"
 
@@ -217,7 +235,7 @@ class Player:
         self.catan.board[coords[0], coords[1]] = self.tag
         self.settlements.append(coords)
 
-        if not situation:
+        if remove_resources:
             # removing resources
             self.update_resources_settlement()
 
@@ -227,14 +245,14 @@ class Player:
         self.resources[4] -= 1
         self.resources[5] -= 1
 
-    def build_road(self, coords: tuple, situation=False):
+    def build_road(self, coords: tuple, remove_resources=True):
         assert coords not in self.roads, "Building in the same spot!"
 
         logging.debug(f"Built road at : {coords}")
 
         self.catan.board[coords[0], coords[1]] = self.tag
         self.roads.append(coords)
-        if not situation:
+        if remove_resources:
             self.update_resources_settlement()
 
             if len(self.roads) >= 5:
@@ -266,9 +284,11 @@ class Player:
         self.resources[resource_out] += 1
         logging.debug(f"Trading {resource_in} for {resource_out}")
 
-    def place_robber(self, coords):
+    def place_robber(self, coords: tuple):
         """Place robber at coords and steal resources from opponent"""
-        self.robber = coords
+        self.catan.board[self.catan.board == self.catan.robber_tag] = 0
+
+        self.catan.board[coords] = self.catan.robber_tag
         logging.debug(f"Placed robber at : {coords}")
         (y, x) = coords
 
@@ -282,14 +302,28 @@ class Player:
         ]
         for y, x in list_of_potential_owners:
             potential_opponent = self.catan.board[y, x]
-            if potential_opponent != -1 and potential_opponent != self.tag:
+            if (
+                potential_opponent in self.catan.players
+                and potential_opponent != self.tag
+            ):
                 opponent = potential_opponent
-                if self.catan.players[opponent].resources > 0:
+                if any(
+                    [
+                        player_resoruce > 0
+                        for player_resoruce in self.catan.players[
+                            opponent
+                        ].resources.values()
+                    ]
+                ):
                     available_resource = random.choice(
                         self.catan.players[opponent].available_resources()
                     )
                     self.catan.players[opponent].resources[available_resource] -= 1
                     self.catan.players[self.tag].resources[available_resource] += 1
+                    logging.debug(
+                        f"Robber stole {self.catan.resource_card[available_resource][0]} from {opponent}"
+                    )
+        assert len(np.where(self.catan.board == self.catan.robber_tag)[0]) == 1
 
     def available_resources(self):
         available_resources = []
@@ -404,8 +438,7 @@ class Player:
         logging.debug(f"<-- Player {self.tag} -->")
 
     def player_posturn_debug(self):
-        self.catan.print_board()
-        # logging.debug(f"<-- Player {self.tag} -->")
+        logging.debug(f"<-- Player {self.tag} -->")
         logging.debug(f"Resources: {self.resources}")
         logging.debug(f"Points: {self.points}")
         logging.debug(f"Potential sett: {self.potential_settlement}")
@@ -413,9 +446,12 @@ class Player:
         logging.debug(f"Potential trade: {self.potential_trade}")
 
     def player_episode_audit(self):
-        unique, counts = np.unique(self.actions_taken, return_counts=True)
         logging.info(f"<-- Player {self.tag} -->")
-        logging.info(f"Actions taken: {dict(zip(unique, counts))}")
+
+        unique_actions = Counter(self.actions_taken)
+        logging.info(
+            f"Actions taken: {dict(zip(unique_actions.keys(), unique_actions.values()))}"
+        )
         logging.info(f"Settlements : {self.settlements}")
         logging.info(f"City : {self.cities}")
         logging.info(f"Roads : {self.roads}")
@@ -426,6 +462,7 @@ class Player:
 
 
 class Catan:
+    robber_tag = 50
     knight_card = {
         "knight": 14,
         "victory_point": 5,
@@ -468,6 +505,25 @@ class Catan:
         11: 2,
         12: 1,
     }
+    habor_tokens = {
+        -20: 4,  # 3 to 1
+        -21: 1,  # brick
+        -22: 1,  # lumber
+        -23: 1,  # ore
+        -24: 1,  # grain
+        -25: 1,  # wool
+    }
+    harbor_coords = {
+        (2, 6): [(0, 2), (2, 0)],
+        (2, 14): [(2, 0), (0, -2)],
+        (6, 20): [(2, 0), (0, -2)],
+        (9, 3): [(-1, 1), (1, 1)],
+        (13, 23): [(-1, -1), (1, -1)],
+        (17, 3): [(-1, 1), (1, 1)],
+        (20, 20): [(-2, 0), (0, -2)],
+        (24, 6): [(-2, 0), (0, 2)],
+        (24, 14): [(-2, 0), (0, -2)],
+    }
     # fmt: off
     center_coords = [
         (5, 8),(5, 12),(5, 16),
@@ -476,50 +532,49 @@ class Catan:
         (17, 6),(17, 10),(17, 14),(17, 18),
         (21, 8),(21, 12),(21, 16),
     ]
-    empty_board =  np.array(
-        [
-            # The extra padding is to make sure the validation works for delivering resources.
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0],
-        [0, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, 0],
-        [0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0],
-        [0, 0, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, 0, 0],
-        [0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0],
-        [0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0],
-        [0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0],
-        [0, 0, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, 0, 0],
-        [0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0],
-        [0, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, 0],
-        [0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, -2, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, -2, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            # fmt: on
-        ]
-    )
+    # fmt: on
+
     def __init__(self) -> None:
         self.game_over = False
         self.winner = None
         self.turn = 0
-
-        
+        # fmt: off
+        self.empty_board =  np.array(
+        [
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,3,0,-1,0,0,0,-1,0,3,0,-1,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0,0,0],
+        [0,0,0,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,0,0,0],
+        [0,0,0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,3,0,0,0,0],
+        [0,0,0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0,0,0],
+        [0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0],
+        [0,0,0,3,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,0],
+        [0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0],
+        [0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0],
+        [0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0],
+        [0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,3,0],
+        [0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0],
+        [0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0],
+        [0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0],
+        [0,0,0,3,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,0],
+        [0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0],
+        [0,0,0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0,0,0],
+        [0,0,0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,3,0,0,0,0],
+        [0,0,0,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,0,0,0],
+        [0,0,0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,3,0,-1,0,0,0,-1,0,3,0,-1,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        ]
+    )
         # fmt: on
 
         self.board = self.generate_board()
         self.players = self.generate_players()
-        self.player_tags = [-9,-19,-8,-8]
+        self.player_tags = [-9, -19, -8, -8]
 
         self.all_road_spots = self.get_road_spots()
         self.all_settlement_spots = self.get_settment_spots()
@@ -552,13 +607,13 @@ class Catan:
         """
 
         action_space = {
-            0: [None],  # nothing
-            1: self.get_road_spots(),  # road
-            2: self.get_settment_spots(),  # settlement
-            3: self.get_settment_spots(),  # city
-            4: self.get_trades(),  # trade
-            5: self.get_discards(),  # discards
-            6: self.get_robber_spots(), #robbers
+            Action.PASS: [None],  # nothing
+            Action.ROAD: self.get_road_spots(),  # road
+            Action.SETTLEMENT: self.get_settment_spots(),  # settlement
+            Action.CITY: self.get_settment_spots(),  # city
+            Action.TRADE: self.get_trades(),  # trade
+            Action.DISCARD: self.get_discards(),  # discards
+            Action.ROBBER: self.get_robber_spots(),  # robbers
         }
         flatten_action_space = [
             (action_index, potential_action)
@@ -576,7 +631,7 @@ class Catan:
         board = board[2 : board.shape[0] - 2, 2 : board.shape[1] - 2]
         zero_tmp = 97
         board[board == 0] = zero_tmp
-        board[board == 50] = zero_tmp
+        # board[board == 50] = zero_tmp
         for i in range(12, 22 + 1):
             board[board == i] = i - 10
 
