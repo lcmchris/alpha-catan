@@ -95,8 +95,14 @@ class PlayerAI(Player):
             )
         board = self.catan.board.ravel().astype(np.float64)
         board = np.delete(board, np.where(board == 0))  # crop
-
+        board = self.one_hot_encoder_board(board)
         return np.append(resource_arr, board)
+
+    def one_hot_encoder_board(self, board: np.ndarray):
+        board = np.append(board, np.array([self.catan.player_tags]))
+        unique, inverse = np.unique(board, return_inverse=True)
+        onehot = np.eye(unique.shape[0])[inverse]
+        return onehot
 
     def pick_action(self):
         if self.player_type == PlayerType.RANDOM:
@@ -216,59 +222,6 @@ class CatanAI(Catan):
             player.player_start()
         logging.info("Game started!")
 
-    def generate_board(self):
-        resource_list = [
-            key for key, value in self.resource_cards.items() for x in range(value)
-        ]
-
-        # Add 10 to each number to avoid clashing with resource numbers
-        # fmt: off
-        alt_number_tokens = [
-            12,13,13,14,14,15,15,16,16,
-            18,18,19,19,20,20,21,21,22,0,
-        ]
-        # fmt: on
-
-        def pick_and_pop(__list: list) -> int:
-            picked = 0
-            value = __list[picked]
-            __list.pop(picked)
-            return value
-
-        """
-        Grid of 5 hexagons CENTER = resource number, CENTER+1 = resource type
-        21 x 23
-
-        """
-        # arr = np.zeros((10, 11))
-
-        # fmt: off
-        arr = self.empty_board
-
-        # Shuffle based on seed
-        random.Random(self.seed).shuffle(alt_number_tokens)
-        random.Random(self.seed).shuffle(resource_list)
-
-        for y, x in self.center_coords:
-            number = pick_and_pop(alt_number_tokens)
-            resource = pick_and_pop(resource_list)
-            
-            arr[y - 1, x] = resource
-            arr[y + 1, x] = number
-
-            if resource == 6:
-                
-                arr[y, x] = self.robber_tag  # robber reference
-
-
-        alt_habor_toknes = [token for token, count in self.habor_tokens.items() for i in range(count) ]
-
-        for y,x in self.harbor_coords:
-            habor = pick_and_pop(alt_habor_toknes)
-            arr[y,x] = habor
-
-        return arr
-
     def board_turn(self, player_tag=int):
         """
         roll dice and deliver resources.
@@ -293,32 +246,6 @@ class CatanAI(Catan):
 
     def roll(self):
         return random.randint(1, 6) + random.randint(1, 6) + 10
-
-    def deliver_resource(self, roll):
-        resource_hit = np.argwhere(self.board == roll)
-
-        for y, x in resource_hit:
-            list_of_potential_owners = [
-                [y - 4, x],
-                [y + 2, x],
-                [y, x + 2],
-                [y, x - 2],
-                [y - 2, x + 2],
-                [y - 2, x - 2],
-            ]
-            resource_type = self.board[y - 2, x]
-            logging.debug(f"Resource type: {resource_type}")
-
-            if resource_type == 6:
-                continue
-            else:
-                for potential_y, potential_x in list_of_potential_owners:
-                    owner_tag = self.board[potential_y, potential_x]
-
-                    if owner_tag != -1:
-                        resource_num = 1 if owner_tag >= -10 else 2
-                        owner_tag = owner_tag if owner_tag >= -10 else owner_tag + 10
-                        self.add_resource(owner_tag, resource_type, resource_num)
 
 
 def softmax(x):

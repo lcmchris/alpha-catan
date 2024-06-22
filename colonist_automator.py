@@ -378,9 +378,9 @@ class ColonistIOAutomator(Catan):
     def set_board_tiles_ocr(self):
         canvas_img = self.canvas_img.copy()
 
-        for tile, tile_count in self.resource_cards.items():
+        for tile, tile_count in self.resource_tokens.items():
             template = cv2.imread(
-                f"image-matching/type_{str(tile)}.png", cv2.IMREAD_COLOR
+                f"image-matching/type_{str(tile.value)}.png", cv2.IMREAD_COLOR
             )
             h, w = template.shape[:2]
 
@@ -399,7 +399,7 @@ class ColonistIOAutomator(Catan):
                 )
                 (y, x) = coord
                 assert coord in self.center_coords
-                self.board[y - 1, x] = tile
+                self.board[y - 1, x] = tile.value
 
     def loop_templates_ocr(
         self,

@@ -23,6 +23,24 @@ class Action(Enum):
     ROBBER: int = 6
 
 
+class Resource(Enum):
+    BRICK = 1
+    LUMBER = 2
+    ORE = 3
+    GRAIN = 4
+    WOOL = 5
+    DESERT = 6
+
+
+class HARBOR(Enum):
+    THREETOONE = -20
+    BRICK = -21
+    LUMBER = 22
+    ORE = -23
+    GRAIN = -24
+    WOOL = -25
+
+
 class Player:
     def __init__(
         self,
@@ -33,11 +51,11 @@ class Player:
         self.tag = tag
         self.resources = {
             # name, count, Start with 2 settlement + 2 roads
-            1: 0,  # brick
-            2: 0,  # lumber
-            3: 0,  # ore
-            4: 0,  # grain
-            5: 0,  # wool
+            Resource.BRICK: 0,  # brick
+            Resource.LUMBER: 0,  # lumber
+            Resource.ORE: 0,  # ore
+            Resource.GRAIN: 0,  # grain
+            Resource.WOOL: 0,  # wool
         }
         self.knight_cards = {
             "knight": 0,
@@ -46,9 +64,9 @@ class Player:
             "year_of_plenty": 0,
             "monopoly": 0,
         }
-        self.settlements = []
-        self.roads = []
-        self.cities = []
+        self.settlements: list[tuple] = []
+        self.roads: list[tuple] = []
+        self.cities: list[tuple] = []
         self.action_space = None
         self.potential_settlement = []
         self.potential_road = []
@@ -117,7 +135,7 @@ class Player:
         elif situation == Action.DISCARD:
             for resource, count in self.resources.items():
                 if count > 0:
-                    action_space_list.append((Action.DISCARD, resource))
+                    action_space_list.append((Action.DISCARD, resource.value))
         elif situation == Action.ROBBER:
             for center_coord in self.catan.center_coords:
                 action_space_list.append((Action.ROBBER, center_coord))
@@ -126,40 +144,35 @@ class Player:
         else:
             action_space_list.append((Action.PASS, None))
 
-            if (self.resources[1] >= 1 and self.resources[2] >= 1) and len(
-                self.roads
-            ) < self.catan.max_properties["roads"]:
+            if (
+                self.resources[Resource.BRICK] >= 1
+                and self.resources[Resource.LUMBER] >= 1
+            ) and len(self.roads) < self.catan.max_properties["roads"]:
                 self.potential_road = self.get_potential_road()
                 for road in self.potential_road:
                     action_space_list.append((Action.ROAD, road))
 
             if (
-                self.resources[1] >= 1
-                and self.resources[2] >= 1
-                and self.resources[4] >= 1
-                and self.resources[5] >= 1
+                self.resources[Resource.BRICK] >= 1
+                and self.resources[Resource.LUMBER] >= 1
+                and self.resources[Resource.GRAIN] >= 1
+                and self.resources[Resource.WOOL] >= 1
             ) and len(self.settlements) < self.catan.max_properties["settlements"]:
                 self.potential_settlement = self.get_potential_settlement()
                 for settlement in self.potential_settlement:
                     action_space_list.append((Action.SETTLEMENT, settlement))
 
-            if (self.resources[3] >= 3 and self.resources[4] >= 2) and len(
-                self.cities
-            ) < self.catan.max_properties["cities"]:
+            if (
+                self.resources[Resource.ORE] >= 3
+                and self.resources[Resource.GRAIN] >= 2
+            ) and len(self.cities) < self.catan.max_properties["cities"]:
                 self.potential_city = self.get_potential_city()
                 for city in self.potential_city:
                     action_space_list.append((Action.CITY, city))
 
-            if (
-                self.resources[1] >= 4
-                or self.resources[2] >= 4
-                or self.resources[3] >= 4
-                or self.resources[4] >= 4
-                or self.resources[5] >= 4
-            ):
-                self.potential_trade = self.get_potential_trade()
-                for trade in self.potential_trade:
-                    action_space_list.append((Action.TRADE, trade))
+            self.potential_trade = self.get_potential_trade()
+            for trade in self.potential_trade:
+                action_space_list.append((Action.TRADE, trade))
 
         action_space = self.action_space_list_to_action_arr(action_space_list)
         logging.debug(action_space)
@@ -191,21 +204,73 @@ class Player:
         return best_action
 
     def discard_resources(self, attributes):
-        self.resources[attributes] -= 1
+        self.resources[Resource(attributes)] -= 1
 
     def discard_resources_turn(self):
         pass
 
+    def owned_harbors(self) -> list:
+        owned_harbors = set()
+        for spot in self.settlements + self.cities:
+            if spot in self.catan.harbor_ownership:
+                owned_harbors.add(HARBOR(self.catan.harbor_ownership[spot]))
+        return list(owned_harbors)
+
+    def add_all_other_resource(self, resource: Resource):
+        pot_trades_for_resource = set()
+        for j in range(1, 6):
+            if j != resource.value:
+                pot_trades_for_resource.add((resource.value, j))
+        return pot_trades_for_resource
+
     def get_potential_trade(self) -> list[tuple[int, int]]:
         # returns a list of tuples of the form (resource, resource)
-        list_of_potential_trades = []
+        set_of_potential_trades = set()
 
-        for i in range(1, 6):
-            if self.resources[i] >= 4:
+        owned_harbors = self.owned_harbors()
+        for harbor in owned_harbors:
+            if harbor == HARBOR.THREETOONE:
+                for resource, count in self.resources.items():
+                    if count >= 3:
+                        for j in range(1, 6):
+                            if j != resource.value:
+                                set_of_potential_trades.add((resource.value, j))
+
+            elif harbor == HARBOR.BRICK:
+                if self.resources[Resource.BRICK] >= 2:
+                    set_of_potential_trades.add(
+                        self.add_all_other_resource(Resource.BRICK)
+                    )
+            elif harbor == HARBOR.LUMBER:
+                if self.resources[Resource.LUMBER] >= 2:
+                    set_of_potential_trades.add(
+                        self.add_all_other_resource(Resource.LUMBER)
+                    )
+            elif harbor == HARBOR.ORE:
+                if self.resources[Resource.ORE] >= 2:
+                    set_of_potential_trades.add(
+                        self.add_all_other_resource(Resource.ORE)
+                    )
+            elif harbor == HARBOR.GRAIN:
+                if self.resources[Resource.GRAIN] >= 2:
+                    set_of_potential_trades.add(
+                        self.add_all_other_resource(Resource.GRAIN)
+                    )
+            elif harbor == HARBOR.WOOL:
+                if self.resources[Resource.WOOL] >= 2:
+                    set_of_potential_trades.add(
+                        self.add_all_other_resource(Resource.WOOL)
+                    )
+            else:
+                raise Exception("Invalid harbor")
+
+        for resource, count in self.resources.items():
+            if count >= 4:
                 for j in range(1, 6):
-                    if j != i:
-                        list_of_potential_trades.append((i, j))
+                    if j != resource.value:
+                        set_of_potential_trades.add((resource.value, j, 4))
 
+        list_of_potential_trades = list(set_of_potential_trades)
         return list_of_potential_trades
 
     def perform_action(self, action: Action, attributes, remove_resources=True):
@@ -240,10 +305,10 @@ class Player:
             self.update_resources_settlement()
 
     def update_resources_settlement(self):
-        self.resources[1] -= 1
-        self.resources[2] -= 1
-        self.resources[4] -= 1
-        self.resources[5] -= 1
+        self.resources[Resource.BRICK] -= 1
+        self.resources[Resource.WOOL] -= 1
+        self.resources[Resource.LUMBER] -= 1
+        self.resources[Resource.WOOL] -= 1
 
     def build_road(self, coords: tuple, remove_resources=True):
         assert coords not in self.roads, "Building in the same spot!"
@@ -259,8 +324,8 @@ class Player:
                 self.longest_road = self.calculate_longest_road()
 
     def update_resources_road(self):
-        self.resources[1] -= 1
-        self.resources[2] -= 1
+        self.resources[Resource.BRICK] -= 1
+        self.resources[Resource.LUMBER] -= 1
 
     def build_city(self, coords):
         assert coords not in self.cities, "Building in the same spot!"
@@ -274,22 +339,26 @@ class Player:
         self.update_resources_city()
 
     def update_resources_city(self):
-        self.resources[3] -= 3
-        self.resources[4] -= 2
+        self.resources[Resource.ORE] -= 3
+        self.resources[Resource.GRAIN] -= 2
 
-    def trade_with_bank(self, resource_in_resource_out):
-        resource_in = resource_in_resource_out[0]
-        resource_out = resource_in_resource_out[1]
-        self.resources[resource_in] -= 4
+    def trade_with_bank(self, resource_in_resource_out: tuple):
+        resource_in = Resource(resource_in_resource_out[0])
+        resource_out = Resource(resource_in_resource_out[1])
+
+
+        self.resources[resource_in] -= count
         self.resources[resource_out] += 1
-        logging.debug(f"Trading {resource_in} for {resource_out}")
+        logging.debug(f"Trading {resource_in} for {resource_out} at {count}")
 
     def place_robber(self, coords: tuple):
         """Place robber at coords and steal resources from opponent"""
-        self.catan.board[self.catan.board == self.catan.robber_tag] = 0
+        self.catan.board[self.catan.board == self.catan.robber_tag] = (
+            self.catan.dummy_robber_tag
+        )
 
         self.catan.board[coords] = self.catan.robber_tag
-        logging.debug(f"Placed robber at : {coords}")
+        logging.debug(f"Placed robber at : {coords}")            
         (y, x) = coords
 
         list_of_potential_owners = [
@@ -315,26 +384,25 @@ class Player:
                         ].resources.values()
                     ]
                 ):
-                    available_resource = random.choice(
+                    robbed_resource = random.choice(
                         self.catan.players[opponent].available_resources()
                     )
-                    self.catan.players[opponent].resources[available_resource] -= 1
-                    self.catan.players[self.tag].resources[available_resource] += 1
-                    logging.debug(
-                        f"Robber stole {self.catan.resource_card[available_resource][0]} from {opponent}"
-                    )
+                    self.catan.players[opponent].resources[robbed_resource] -= 1
+                    self.catan.players[self.tag].resources[robbed_resource] += 1
+                    logging.debug(f"Robber stole {robbed_resource} from {opponent}")
+
         assert len(np.where(self.catan.board == self.catan.robber_tag)[0]) == 1
 
-    def available_resources(self):
+    def available_resources(self) -> list[Resource]:
         available_resources = []
-        for i in range(1, 6):
-            if self.resources[i] > 0:
-                available_resources.append(i)
+        for resource, count in self.resources.items():
+            if count > 0:
+                available_resources.append(resource)
 
         return available_resources
 
     def update_resources(self, resource_tag: int, number: int):
-        self.resources[resource_tag] += number
+        self.resources[Resource(resource_tag)] += number
 
     def get_potential_settlement(self):
         """
@@ -462,79 +530,83 @@ class Player:
 
 
 class Catan:
-    robber_tag = 50
-    knight_card = {
-        "knight": 14,
-        "victory_point": 5,
-        "road_building": 2,
-        "year_of_plenty": 2,
-        "monopoly": 2,
-    }
-    max_properties = {
-        "settlements": 5,
-        "cities": 4,
-        "roads": 15,
-    }
-    resources_tag = {"brick": 1, "lumber": 2, "ore": 3, "grain": 4, "wool": 5}
-    resource_card = {
-        # name, count, tile_count
-        1: ["brick", 19],
-        2: ["lumber", 19],
-        3: ["ore", 19],
-        4: ["grain", 19],
-        5: ["wool", 19],
-        6: ["desert", 0],
-    }
-    resource_cards = {
-        1: 3,  # brick
-        2: 4,  # lumber
-        3: 3,  # ore
-        4: 4,  # grain
-        5: 4,  # wool
-        6: 1,  # desert
-    }
-    number_tokens = {
-        2: 1,
-        3: 2,
-        4: 2,
-        5: 2,
-        6: 2,
-        8: 2,
-        9: 2,
-        10: 2,
-        11: 2,
-        12: 1,
-    }
-    habor_tokens = {
-        -20: 4,  # 3 to 1
-        -21: 1,  # brick
-        -22: 1,  # lumber
-        -23: 1,  # ore
-        -24: 1,  # grain
-        -25: 1,  # wool
-    }
-    harbor_coords = {
-        (2, 6): [(0, 2), (2, 0)],
-        (2, 14): [(2, 0), (0, -2)],
-        (6, 20): [(2, 0), (0, -2)],
-        (9, 3): [(-1, 1), (1, 1)],
-        (13, 23): [(-1, -1), (1, -1)],
-        (17, 3): [(-1, 1), (1, 1)],
-        (20, 20): [(-2, 0), (0, -2)],
-        (24, 6): [(-2, 0), (0, 2)],
-        (24, 14): [(-2, 0), (0, -2)],
-    }
-    # fmt: off
-    center_coords = [
-        (5, 8),(5, 12),(5, 16),
-        (9, 6),(9, 10),(9, 14),(9, 18), 
-        (13, 4),(13, 8),(13, 12),(13, 16),(13, 20),
-        (17, 6),(17, 10),(17, 14),(17, 18),
-        (21, 8),(21, 12),(21, 16),
-    ]
-    # fmt: on
-
     def __init__(self) -> None:
+        self.seed = 0
+        self.robber_tag = 50
+        self.dummy_robber_tag = 52
+        self.knight_card = {
+            "knight": 14,
+            "victory_point": 5,
+            "road_building": 2,
+            "year_of_plenty": 2,
+            "monopoly": 2,
+        }
+        self.max_properties = {
+            "settlements": 5,
+            "cities": 4,
+            "roads": 15,
+        }
+        self.resources_tag = {"brick": 1, "lumber": 2, "ore": 3, "grain": 4, "wool": 5}
+        self.resource_card_count = {
+            # name, count, tile_count
+            Resource.BRICK: 19,
+            Resource.LUMBER: 19,
+            Resource.ORE: 19,
+            Resource.GRAIN: 19,
+            Resource.WOOL: 19,
+            Resource.DESERT: 0,
+        }
+        self.resource_tokens = {
+            Resource.BRICK: 3,  # brick
+            Resource.LUMBER: 4,  # lumber
+            Resource.ORE: 3,  # ore
+            Resource.GRAIN: 4,  # grain
+            Resource.WOOL: 4,  # wool
+            Resource.DESERT: 1,  # desert
+        }
+        self.number_tokens = {
+            2: 1,
+            3: 2,
+            4: 2,
+            5: 2,
+            6: 2,
+            8: 2,
+            9: 2,
+            10: 2,
+            11: 2,
+            12: 1,
+        }
+
+        self.harbor_tokens = {
+            HARBOR.THREETOONE.value: 4,  # 3 to 1
+            HARBOR.BRICK.value: 1,  # brick
+            HARBOR.LUMBER.value: 1,  # lumber
+            HARBOR.ORE.value: 1,  # ore
+            HARBOR.GRAIN.value: 1,  # grain
+            HARBOR.WOOL.value: 1,  # wool
+        }
+        self.harbor_coords = {
+            (2, 6): [(0, 2), (2, 0)],
+            (2, 14): [(2, 0), (0, -2)],
+            (6, 20): [(2, 0), (0, -2)],
+            (9, 3): [(-1, 1), (1, 1)],
+            (13, 23): [(-1, -1), (1, -1)],
+            (17, 3): [(-1, 1), (1, 1)],
+            (20, 20): [(-2, 0), (0, -2)],
+            (24, 6): [(-2, 0), (0, 2)],
+            (24, 14): [(-2, 0), (0, -2)],
+        }
+        self.harbor_ownership: dict[tuple, int]
+
+        # fmt: off
+        self.center_coords = [
+            (5, 8),(5, 12),(5, 16),
+            (9, 6),(9, 10),(9, 14),(9, 18), 
+            (13, 4),(13, 8),(13, 12),(13, 16),(13, 20),
+            (17, 6),(17, 10),(17, 14),(17, 18),
+            (21, 8),(21, 12),(21, 16),
+        ]
+        # fmt: on
         self.game_over = False
         self.winner = None
         self.turn = 0
@@ -574,11 +646,20 @@ class Catan:
 
         self.board = self.generate_board()
         self.players = self.generate_players()
-        self.player_tags = [-9, -19, -8, -8]
+        self.player_tags = [-9, -19, -8, -18]
 
         self.all_road_spots = self.get_road_spots()
         self.all_settlement_spots = self.get_settment_spots()
         self.base_action_space = self.generate_all_action_space()
+
+        self.unique_tags = (
+            [-2, -1]
+            + self.player_tags
+            + list(self.harbor_tokens)
+            + list(self.resource_tokens.keys())
+            + [key + 10 for key in self.number_tokens.keys()]
+            + [self.robber_tag, self.dummy_robber_tag]
+        )
 
     def get_settment_spots(self):
         return arr_to_tuple(np.argwhere(self.board == -1))
@@ -642,8 +723,65 @@ class Catan:
         board_string = board_string.replace(f"{zero_tmp}", "  ")
         print(board_string)
 
-    def generate_board(self) -> np.ndarray:
-        return self.empty_board
+    def generate_board(self):
+        resource_list = [
+            resource.value
+            for resource, count in self.resource_tokens.items()
+            for x in range(count)
+        ]
+        number_list = [
+            key + 10 for key, value in self.number_tokens.items() for x in range(value)
+        ]
+
+        def pick_and_pop(__list: list) -> int:
+            picked = 0
+            value = __list[picked]
+            __list.pop(picked)
+            return value
+
+        """
+        Grid of 5 hexagons CENTER = resource number, CENTER+1 = resource type
+        21 x 23
+
+        """
+        # fmt: off
+        arr = self.empty_board
+
+        # Shuffle based on seed, off by one
+        random.Random(self.seed).shuffle(resource_list)
+        random.Random(self.seed+1).shuffle(number_list)
+
+        for y, x in self.center_coords:
+            resource = pick_and_pop(resource_list)
+
+            if resource == 6:
+                number = 0
+            else:
+                number = pick_and_pop(number_list)
+            
+            
+            arr[y - 1, x] = resource
+            arr[y + 1, x] = number
+
+            if resource == 6:
+                arr[y, x] = self.robber_tag  # robber reference
+            else:
+                arr[y, x] = self.dummy_robber_tag
+
+        harbor_toknes_list = [token for token, count in self.harbor_tokens.items() for i in range(count) ]
+
+        for y,x in self.harbor_coords:
+            harbor = pick_and_pop(harbor_toknes_list)
+            arr[y,x] = harbor
+
+
+        # Generate coords of ownership
+        self.harbor_ownership = {
+            (harbor[0] + pos[0], harbor[1] + pos[1]): arr[harbor]
+            for harbor, positions in self.harbor_coords.items()
+            for pos in positions
+        }
+        return arr
 
     def deliver_resource(self, roll):
         resource_hit = np.argwhere(self.board == roll)
@@ -657,10 +795,10 @@ class Catan:
                 [y - 2, x + 2],
                 [y - 2, x - 2],
             ]
-            resource_type = self.board[y - 2, x]
-            logging.debug(f"Resource type: {resource_type}")
+            resource_type = Resource(self.board[y - 2, x])
+            logging.info(f"Resource type: {resource_type}")
 
-            if resource_type == 6:
+            if resource_type == Resource.DESERT:
                 continue
             else:
                 for potential_y, potential_x in list_of_potential_owners:
@@ -671,8 +809,8 @@ class Catan:
                         owner_tag = owner_tag if owner_tag >= -10 else owner_tag + 10
                         self.add_resource(owner_tag, resource_type, resource_num)
 
-    def add_resource(self, owner_tag, resource_type, resource_num: int):
+    def add_resource(self, owner_tag, resource_type: Resource, resource_num: int):
         self.players[owner_tag].resources[resource_type] += resource_num
         logging.debug(
-            f"Player {self.players[owner_tag].tag} received {resource_num} of {resource_type}({self.resource_card[resource_type][0]})"
+            f"Player {self.players[owner_tag].tag} received {resource_num} of {resource_type}({resource_type})"
         )
