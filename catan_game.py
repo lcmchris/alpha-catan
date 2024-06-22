@@ -33,12 +33,22 @@ class Resource(Enum):
 
 
 class HARBOR(Enum):
-    THREETOONE = -20
-    BRICK = -21
-    LUMBER = 22
-    ORE = -23
-    GRAIN = -24
-    WOOL = -25
+    THREETOONE = -20, None
+    BRICK = -21, Resource.BRICK
+    LUMBER = -22, Resource.LUMBER
+    ORE = -23, Resource.ORE
+    GRAIN = -24, Resource.GRAIN
+    WOOL = -25, Resource.WOOL
+
+    def __new__(cls, tag: int, resource: Resource | None):
+        obj = object.__new__(cls)
+        obj._value_ = tag
+        obj.resource = resource
+        return obj
+
+    def __init__(self, tag: int, resource) -> None:
+        self.tag = tag
+        self.resource = resource
 
 
 class Player:
@@ -209,68 +219,44 @@ class Player:
     def discard_resources_turn(self):
         pass
 
-    def owned_harbors(self) -> list:
+    def owned_harbors(self) -> list[HARBOR]:
         owned_harbors = set()
         for spot in self.settlements + self.cities:
             if spot in self.catan.harbor_ownership:
                 owned_harbors.add(HARBOR(self.catan.harbor_ownership[spot]))
         return list(owned_harbors)
 
-    def add_all_other_resource(self, resource: Resource):
+    def add_all_other_resource(self, resource: Resource, count: int):
         pot_trades_for_resource = set()
         for j in range(1, 6):
             if j != resource.value:
-                pot_trades_for_resource.add((resource.value, j))
+                pot_trades_for_resource.add((resource.value, j, count))
         return pot_trades_for_resource
 
     def get_potential_trade(self) -> list[tuple[int, int]]:
-        # returns a list of tuples of the form (resource, resource)
-        set_of_potential_trades = set()
+        # returns a list of tuples of the form (resource, resource, count)
+        list_of_potential_trades = []
+        for resource, count in self.resources.items():
+            if count >= 4:
+                list_of_potential_trades.append(
+                    self.add_all_other_resource(resource, 4)
+                )
 
         owned_harbors = self.owned_harbors()
         for harbor in owned_harbors:
             if harbor == HARBOR.THREETOONE:
                 for resource, count in self.resources.items():
                     if count >= 3:
-                        for j in range(1, 6):
-                            if j != resource.value:
-                                set_of_potential_trades.add((resource.value, j))
+                        list_of_potential_trades.append(
+                            self.add_all_other_resource(resource, 3)
+                        )
 
-            elif harbor == HARBOR.BRICK:
-                if self.resources[Resource.BRICK] >= 2:
-                    set_of_potential_trades.add(
-                        self.add_all_other_resource(Resource.BRICK)
-                    )
-            elif harbor == HARBOR.LUMBER:
-                if self.resources[Resource.LUMBER] >= 2:
-                    set_of_potential_trades.add(
-                        self.add_all_other_resource(Resource.LUMBER)
-                    )
-            elif harbor == HARBOR.ORE:
-                if self.resources[Resource.ORE] >= 2:
-                    set_of_potential_trades.add(
-                        self.add_all_other_resource(Resource.ORE)
-                    )
-            elif harbor == HARBOR.GRAIN:
-                if self.resources[Resource.GRAIN] >= 2:
-                    set_of_potential_trades.add(
-                        self.add_all_other_resource(Resource.GRAIN)
-                    )
-            elif harbor == HARBOR.WOOL:
-                if self.resources[Resource.WOOL] >= 2:
-                    set_of_potential_trades.add(
-                        self.add_all_other_resource(Resource.WOOL)
-                    )
             else:
-                raise Exception("Invalid harbor")
+                if self.resources[harbor.resource] >= 2:
+                    list_of_potential_trades.append(
+                        self.add_all_other_resource(harbor.resource, 2)
+                    )
 
-        for resource, count in self.resources.items():
-            if count >= 4:
-                for j in range(1, 6):
-                    if j != resource.value:
-                        set_of_potential_trades.add((resource.value, j, 4))
-
-        list_of_potential_trades = list(set_of_potential_trades)
         return list_of_potential_trades
 
     def perform_action(self, action: Action, attributes, remove_resources=True):
@@ -283,7 +269,7 @@ class Player:
         elif action == Action.CITY:
             self.build_city(attributes)
         elif action == Action.TRADE:
-            self.trade_with_bank(attributes)
+            self.trade_resources(attributes)
         elif action == Action.DISCARD:
             self.discard_resources(attributes)
         elif action == Action.ROBBER:
@@ -342,10 +328,10 @@ class Player:
         self.resources[Resource.ORE] -= 3
         self.resources[Resource.GRAIN] -= 2
 
-    def trade_with_bank(self, resource_in_resource_out: tuple):
+    def trade_resources(self, resource_in_resource_out: tuple):
         resource_in = Resource(resource_in_resource_out[0])
         resource_out = Resource(resource_in_resource_out[1])
-
+        count = resource_in_resource_out[2]
 
         self.resources[resource_in] -= count
         self.resources[resource_out] += 1
@@ -358,7 +344,7 @@ class Player:
         )
 
         self.catan.board[coords] = self.catan.robber_tag
-        logging.debug(f"Placed robber at : {coords}")            
+        logging.debug(f"Placed robber at : {coords}")
         (y, x) = coords
 
         list_of_potential_owners = [
@@ -564,6 +550,13 @@ class Catan:
             Resource.WOOL: 4,  # wool
             Resource.DESERT: 1,  # desert
         }
+        self.resources_list = [
+            Resource.BRICK,
+            Resource.LUMBER,
+            Resource.ORE,
+            Resource.GRAIN,
+            Resource.WOOL,
+        ]
         self.number_tokens = {
             2: 1,
             3: 2,
@@ -577,13 +570,13 @@ class Catan:
             12: 1,
         }
 
-        self.harbor_tokens = {
-            HARBOR.THREETOONE.value: 4,  # 3 to 1
-            HARBOR.BRICK.value: 1,  # brick
-            HARBOR.LUMBER.value: 1,  # lumber
-            HARBOR.ORE.value: 1,  # ore
-            HARBOR.GRAIN.value: 1,  # grain
-            HARBOR.WOOL.value: 1,  # wool
+        self.harbor_tokens: dict[HARBOR, int] = {
+            HARBOR.THREETOONE: 4,  # 3 to 1
+            HARBOR.BRICK: 1,  # brick
+            HARBOR.LUMBER: 1,  # lumber
+            HARBOR.ORE: 1,  # ore
+            HARBOR.GRAIN: 1,  # grain
+            HARBOR.WOOL: 1,  # wool
         }
         self.harbor_coords = {
             (2, 6): [(0, 2), (2, 0)],
@@ -655,7 +648,7 @@ class Catan:
         self.unique_tags = (
             [-2, -1]
             + self.player_tags
-            + list(self.harbor_tokens)
+            + [harbor.tag for harbor in HARBOR]
             + list(self.resource_tokens.keys())
             + [key + 10 for key in self.number_tokens.keys()]
             + [self.robber_tag, self.dummy_robber_tag]
@@ -668,7 +661,21 @@ class Catan:
         return arr_to_tuple(np.argwhere(self.board == -2))
 
     def get_trades(self):
-        return [(x, y) for x in range(1, 6) for y in range(1, 6) if x != y]
+        return [
+            (in_resource, out_resource, 4)
+            for in_resource in self.resources_list
+            for out_resource in self.resources_list
+            if in_resource != out_resource
+        ] + [
+            // THOS IS WRONG
+            (in_resource, out_resource, 3)
+            if harbor_type == HARBOR.THREETOONE
+            else (in_resource, out_resource, 2)
+            for harbor_type in HARBOR
+            for in_resource in self.resources_list
+            for out_resource in self.resources_list
+            if in_resource != out_resource
+        ]
 
     def get_discards(self):
         return [1, 2, 3, 4, 5]
@@ -768,11 +775,11 @@ class Catan:
             else:
                 arr[y, x] = self.dummy_robber_tag
 
-        harbor_toknes_list = [token for token, count in self.harbor_tokens.items() for i in range(count) ]
+        harbor_tokens_list = [harbor.tag for harbor, count in self.harbor_tokens.items() for i in range(count) ]
 
         for y,x in self.harbor_coords:
-            harbor = pick_and_pop(harbor_toknes_list)
-            arr[y,x] = harbor
+            harbor_tag = pick_and_pop(harbor_tokens_list)
+            arr[y,x] = harbor_tag
 
 
         # Generate coords of ownership
@@ -796,7 +803,6 @@ class Catan:
                 [y - 2, x - 2],
             ]
             resource_type = Resource(self.board[y - 2, x])
-            logging.info(f"Resource type: {resource_type}")
 
             if resource_type == Resource.DESERT:
                 continue
