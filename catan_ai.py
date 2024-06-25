@@ -6,7 +6,7 @@ import pickle
 from matplotlib import pyplot as plt
 import logging
 from enum import Enum
-from catan_game import Player, Catan, Action
+from catan_game import Player, Catan, Action, DevelopmentCard
 
 
 class PlayerType(Enum):
@@ -46,7 +46,7 @@ class PlayerAI(Player):
         self.points = (
             len(self.settlements)
             + 2 * len(self.cities)
-            + self.knight_cards["victory_point"]
+            + self.dev_cards[DevelopmentCard.VP]
         )
         logging.debug(f"Player {self.tag} has {self.points} points")
         if self.points >= 10:
@@ -86,7 +86,7 @@ class PlayerAI(Player):
         "preprocess inputs"
         """
             players_resources with You, next, next+1 ,next+2
-            board positions.
+            hot-encoded board positions
         """
         resource_arr = np.array([])
         for player in self.catan.players.values():
@@ -96,6 +96,7 @@ class PlayerAI(Player):
         board = self.catan.board.ravel().astype(np.float64)
         board = np.delete(board, np.where(board == 0))  # crop
         board = self.one_hot_encoder_board(board)
+
         return np.append(resource_arr, board)
 
     def one_hot_encoder_board(self, board: np.ndarray):
@@ -164,6 +165,9 @@ class PlayerAI(Player):
             action, attributes = self.pick_action()
             logging.debug(f"Action: {action}, Attributes: {attributes}")
             self.perform_action(action, attributes)
+            self.player_turn_action_list.append(action)
+
+        self.player_turn_action_list = []
 
     def player_start(self):
         # for the start we need to enforce the action space to

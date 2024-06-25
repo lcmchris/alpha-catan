@@ -4,7 +4,7 @@ import numpy as np
 import logging
 from enum import Enum
 from collections import Counter
-
+from itertools import combinations
 
 np.set_printoptions(edgeitems=30, linewidth=1000000)
 
@@ -14,13 +14,18 @@ def arr_to_tuple(arr):
 
 
 class Action(Enum):
-    PASS: int = 0
-    ROAD: int = 1
-    SETTLEMENT: int = 2
-    CITY: int = 3
-    TRADE: int = 4
-    DISCARD: int = 5
-    ROBBER: int = 6
+    PASS = 0
+    ROAD = 1
+    SETTLEMENT = 2
+    CITY = 3
+    TRADE = 4
+    DISCARD = 5
+    ROBBER = 6
+    BUYDEVCARD = 7
+    ROADBUILDING = 8
+    YEAROFPLENTY = 9
+    MONOPOLY = 10
+    KNIGHT = 11
 
 
 class Resource(Enum):
@@ -51,6 +56,14 @@ class HARBOR(Enum):
         self.resource = resource
 
 
+class DevelopmentCard(Enum):
+    KNIGHT = 14
+    VP = 5
+    ROADBUILDING = 2
+    YEAROFPLENTY = 2
+    MONOPOLY = 2
+
+
 class Player:
     def __init__(
         self,
@@ -67,12 +80,12 @@ class Player:
             Resource.GRAIN: 0,  # grain
             Resource.WOOL: 0,  # wool
         }
-        self.knight_cards = {
-            "knight": 0,
-            "victory_point": 0,
-            "road_building": 0,
-            "year_of_plenty": 0,
-            "monopoly": 0,
+        self.dev_cards = {
+            DevelopmentCard.KNIGHT: 0,
+            DevelopmentCard.VP: 0,
+            DevelopmentCard.ROADBUILDING: 0,
+            DevelopmentCard.YEAROFPLENTY: 0,
+            DevelopmentCard.MONOPOLY: 0,
         }
         self.settlements: list[tuple] = []
         self.roads: list[tuple] = []
@@ -82,16 +95,22 @@ class Player:
         self.potential_road = []
         self.potential_trade = []
         self.points = 0
-        self.actions_taken = [Action]
+        self.actions_taken: list[Action] = []
         self.reward_sum = 0
+        self.player_turn_action_list = []
 
     def recalc_points(self):
         self.points = (
             len(self.settlements)
             + 2 * len(self.cities)
-            + self.knight_cards["victory_point"]
+            + self.dev_cards[DevelopmentCard.VP]
         )
         logging.debug(f"Player {self.tag} has {self.points} points")
+        if self.points >= 10:
+            logging.info(f"Player {self.tag} wins!")
+
+            self.catan.game_over = True
+            self.catan.winner = self.tag
 
     def calculate_longest_road(self):
         max_length_all = 0
@@ -180,9 +199,39 @@ class Player:
                 for city in self.potential_city:
                     action_space_list.append((Action.CITY, city))
 
+            if (
+                self.resources[Resource.ORE] >= 1
+                and self.resources[Resource.GRAIN] >= 1
+                and self.resources[Resource.WOOL] >= 1
+            ):
+                action_space_list.append((Action.BUYDEVCARD))
+
             self.potential_trade = self.get_potential_trade()
             for trade in self.potential_trade:
                 action_space_list.append((Action.TRADE, trade))
+
+            for dev_card, count in self.dev_cards.items():
+                if count > 0 and any(
+                    self.player_turn_action_list
+                    in [
+                        Action.ROADBUILDING
+                        or Action.MONOPOLY
+                        or Action.YEAROFPLENTY
+                        or Action.KNIGHT
+                    ]
+                ):
+                    if dev_card == DevelopmentCard.KNIGHT:
+                        for center_coord in self.catan.center_coords:
+                            action_space_list.append((Action.KNIGHT, center_coord))
+
+                    elif dev_card == DevelopmentCard.ROADBUILDING:
+                        self.potential_road = self.get_potential_road()
+                        for road in self.potential_road:
+                            action_space_list.append((Action.ROAD, road))
+                    elif dev_card == DevelopmentCard.YEAROFPLENTY:
+                        action_space_list.append(self.catan.get_year_of_plenty())
+                    elif dev_card == DevelopmentCard.MONOPOLY:
+                        action_space_list.append(self.catan.get_monopoly())
 
         action_space = self.action_space_list_to_action_arr(action_space_list)
         logging.debug(action_space)
@@ -250,7 +299,6 @@ class Player:
                         list_of_potential_trades.append(
                             self.add_all_other_resource(resource, 3)
                         )
-
             else:
                 if self.resources[harbor.resource] >= 2:
                     list_of_potential_trades.append(
@@ -274,8 +322,41 @@ class Player:
             self.discard_resources(attributes)
         elif action == Action.ROBBER:
             self.place_robber(attributes)
+        elif action == Action.BUYDEVCARD:
+            self.buy_dev_card()
+        elif action == Action.ROADBUILDING:
+            self.road_building_action(attributes)
+        elif action == Action.YEAROFPLENTY:
+            self.year_of_plenty_action(attributes)
+        elif action == Action.MONOPOLY:
+            self.monopoly_action(attributes)
+        elif action == Action.KNIGHT:
+            self.place_robber(attributes)
         else:
             raise ValueError("action not in action space")
+
+    def road_building_action(self, road_1: tuple, road_2: tuple):
+        # Interchange is the same
+        self.build_road(coords=road_1, remove_resources=False)
+        self.build_road(coords=road_2, remove_resources=False)
+
+    def year_of_plenty_action(self, resource_1: Resource, resource_2: Resource) -> None:
+        self.resources[Resource(resource_1)] += 1
+        self.resources[Resource(resource_2)] += 1
+
+    def monopoly_action(self, resource: Resource):
+        for player in self.catan.players.values():
+            if player != self:
+                stolen_resources = player.resources[resource]
+                self.resources[resource] += stolen_resources
+
+    def buy_dev_card(self) -> None:
+        self.resources[Resource.ORE] -= 1
+        self.resources[Resource.WOOL] -= 1
+        self.resources[Resource.GRAIN] -= 1
+
+        bought_dev_card = self.catan.dev_card_deck.pop()
+        self.dev_cards[bought_dev_card] += 1
 
     def build_settlement(self, coords: tuple, remove_resources=True):
         # examing where I can build a settlement
@@ -294,7 +375,7 @@ class Player:
         self.resources[Resource.BRICK] -= 1
         self.resources[Resource.WOOL] -= 1
         self.resources[Resource.LUMBER] -= 1
-        self.resources[Resource.WOOL] -= 1
+        self.resources[Resource.GRAIN] -= 1
 
     def build_road(self, coords: tuple, remove_resources=True):
         assert coords not in self.roads, "Building in the same spot!"
@@ -482,12 +563,6 @@ class Player:
     def get_potential_city(self):
         return self.settlements
 
-    def player_turn(self):
-        pass
-
-    def player_start(self):
-        pass
-
     def player_preturn_debug(self):
         logging.debug(f"<-- Player {self.tag} -->")
 
@@ -509,6 +584,7 @@ class Player:
         logging.info(f"Settlements : {self.settlements}")
         logging.info(f"City : {self.cities}")
         logging.info(f"Roads : {self.roads}")
+        logging.info(f"Dev Cards : {self.dev_cards}")
         logging.info(f"End Resources: {self.resources}")
         self.reward_sum = round(np.sum(np.vstack(self.r_s)))
         logging.info(f"Reward sum: {self.reward_sum}")
@@ -520,13 +596,9 @@ class Catan:
         self.seed = 0
         self.robber_tag = 50
         self.dummy_robber_tag = 52
-        self.knight_card = {
-            "knight": 14,
-            "victory_point": 5,
-            "road_building": 2,
-            "year_of_plenty": 2,
-            "monopoly": 2,
-        }
+        self.dev_card_deck = [dev for dev in DevelopmentCard for i in range(dev.value)]
+        random.Random(self.seed).shuffle(self.dev_card_deck)
+
         self.max_properties = {
             "settlements": 5,
             "cities": 4,
@@ -661,21 +733,27 @@ class Catan:
         return arr_to_tuple(np.argwhere(self.board == -2))
 
     def get_trades(self):
-        return [
-            (in_resource, out_resource, 4)
-            for in_resource in self.resources_list
-            for out_resource in self.resources_list
-            if in_resource != out_resource
-        ] + [
-            // THOS IS WRONG
-            (in_resource, out_resource, 3)
-            if harbor_type == HARBOR.THREETOONE
-            else (in_resource, out_resource, 2)
-            for harbor_type in HARBOR
-            for in_resource in self.resources_list
-            for out_resource in self.resources_list
-            if in_resource != out_resource
-        ]
+        return (
+            [
+                (in_resource, out_resource, 4)
+                for in_resource in self.resources_list
+                for out_resource in self.resources_list
+                if in_resource != out_resource
+            ]
+            + [
+                (in_resource, out_resource, 3)
+                for in_resource in self.resources_list
+                for out_resource in self.resources_list
+                if in_resource != out_resource
+            ]
+            + [
+                (harbor_type.resource, out_resource, 2)
+                for harbor_type in HARBOR
+                for out_resource in self.resources_list
+                if harbor_type.resource != out_resource
+                and harbor_type != HARBOR.THREETOONE
+            ]
+        )
 
     def get_discards(self):
         return [1, 2, 3, 4, 5]
@@ -683,15 +761,28 @@ class Catan:
     def get_robber_spots(self):
         return self.center_coords
 
+    def get_buy_dev_card(self):
+        return [1]
+
+    def get_road_building(self):
+        # There is alot of combinations.
+        return [
+            (road_1, road_2)
+            for (road_1, road_2) in combinations(self.all_road_spots, 2)
+        ]
+
+    def get_year_of_plenty(self):
+        return [
+            (resource_1, resource_2)
+            for (resource_1, resource_2) in combinations(self.resources_list, 2)
+        ]
+
+    def get_monopoly(self):
+        return self.resources_list
+
     def generate_all_action_space(self) -> list[int, tuple]:
         """
-        0, 0 :: Dim = 1
-        1, {list of all settlements} :: Dim = 2*(3+4+4+5+5+6) = 54
-        2, {list of all road} :: Dim = 72
-        3, {list of all cities} :: Dim = 2*(3+4+4+5+5+6) = 54
-        4, {list of all trades} :: Dim = (4 * 5) = 20
-        5, {list of discards} :: Dim = (5 * 1) = 5
-        6, {list of robber places} :: Dim = (3+4+5+4+3) = 19
+        Generate all the potential actions.
         """
 
         action_space = {
@@ -702,6 +793,11 @@ class Catan:
             Action.TRADE: self.get_trades(),  # trade
             Action.DISCARD: self.get_discards(),  # discards
             Action.ROBBER: self.get_robber_spots(),  # robbers
+            Action.BUYDEVCARD: self.get_buy_dev_card(),
+            Action.ROADBUILDING: self.get_road_building(),
+            Action.YEAROFPLENTY: self.get_year_of_plenty(),
+            Action.MONOPOLY: self.get_monopoly(),
+            Action.KNIGHT: self.get_robber_spots(),
         }
         flatten_action_space = [
             (action_index, potential_action)
@@ -736,15 +832,12 @@ class Catan:
             for resource, count in self.resource_tokens.items()
             for x in range(count)
         ]
+        random.Random(self.seed).shuffle(resource_list)
+
         number_list = [
             key + 10 for key, value in self.number_tokens.items() for x in range(value)
         ]
-
-        def pick_and_pop(__list: list) -> int:
-            picked = 0
-            value = __list[picked]
-            __list.pop(picked)
-            return value
+        random.Random(self.seed + 1).shuffle(number_list)
 
         """
         Grid of 5 hexagons CENTER = resource number, CENTER+1 = resource type
@@ -755,16 +848,14 @@ class Catan:
         arr = self.empty_board
 
         # Shuffle based on seed, off by one
-        random.Random(self.seed).shuffle(resource_list)
-        random.Random(self.seed+1).shuffle(number_list)
 
         for y, x in self.center_coords:
-            resource = pick_and_pop(resource_list)
+            resource = resource_list.pop()
 
             if resource == 6:
                 number = 0
             else:
-                number = pick_and_pop(number_list)
+                number =number_list.pop()
             
             
             arr[y - 1, x] = resource
@@ -776,9 +867,10 @@ class Catan:
                 arr[y, x] = self.dummy_robber_tag
 
         harbor_tokens_list = [harbor.tag for harbor, count in self.harbor_tokens.items() for i in range(count) ]
+        random.Random(self.seed+2).shuffle(harbor_tokens_list)
 
         for y,x in self.harbor_coords:
-            harbor_tag = pick_and_pop(harbor_tokens_list)
+            harbor_tag = harbor_tokens_list.pop()
             arr[y,x] = harbor_tag
 
 
