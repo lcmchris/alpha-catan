@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 import logging
 from enum import Enum
 from catan_game import Player, Catan, Action, DevelopmentCard
+from collections import OrderedDict
 
 
 class PlayerType(Enum):
@@ -43,10 +44,23 @@ class PlayerAI(Player):
         self.catan = catan
 
     def recalc_points(self):
+        if self.longest_road >= 5:
+            for tag, player in self.catan.players.items():
+                if tag != self.tag:
+                    if self.longest_road > player.longest_road:
+                        self.is_longest_road = True
+        if self.largest_army >= 3:
+            for tag, player in self.catan.players.items():
+                if tag != self.tag:
+                    if self.largest_army > player.largest_army:
+                        self.is_largest_army = True
+
         self.points = (
             len(self.settlements)
             + 2 * len(self.cities)
             + self.dev_cards[DevelopmentCard.VP]
+            + (2 if self.is_longest_road else 0)
+            + (2 if self.is_largest_army else 0)
         )
         logging.debug(f"Player {self.tag} has {self.points} points")
         if self.points >= 10:
@@ -86,18 +100,35 @@ class PlayerAI(Player):
         "preprocess inputs"
         """
             players_resources with You, next, next+1 ,next+2
-            hot-encoded board positions
+            board positions.
+
+            Appending opponent's dev card count.
         """
+
         resource_arr = np.array([])
-        for player in self.catan.players.values():
+        dev_cards_arr = np.array([])
+
+        players = self.catan.players.copy()
+
+        first_player = next(iter(players))
+        while first_player != self.tag:
+            players.move_to_end(first_player)
+            first_player = next(iter(players))
+
+        for player in players.values():
             resource_arr = np.append(
                 resource_arr, [resource for resource in player.resources.values()]
             )
+            dev_cards_arr = np.append(dev_cards_arr, [sum(player.dev_cards.values())])
+
         board = self.catan.board.ravel().astype(np.float64)
         board = np.delete(board, np.where(board == 0))  # crop
         board = self.one_hot_encoder_board(board)
 
-        return np.append(resource_arr, board)
+        concentated_arr = np.concatenate(
+            (self.catan.turn, resource_arr, dev_cards_arr, board), axis=None
+        )
+        return concentated_arr
 
     def one_hot_encoder_board(self, board: np.ndarray):
         board = np.append(board, np.array([self.catan.player_tags]))
@@ -201,13 +232,13 @@ class CatanAI(Catan):
         self.mode = mode
         self.catan_training: CatanAITraining = catan_training
 
-        self.players: dict[str, PlayerAI]
+        self.players: OrderedDict[str, PlayerAI]
         super().__init__()
 
     def generate_players(
         self,
     ) -> dict[str, PlayerAI]:
-        players: dict[str, PlayerAI] = {}
+        players: dict[str, PlayerAI] = OrderedDict()
         for i in range(self.player_count):
             player = PlayerAI(
                 catan=self,
@@ -232,6 +263,7 @@ class CatanAI(Catan):
         On roll 7,  discard then place robber
         """
         roll = self.roll()
+        self.turn += 1
         current_player = self.players[player_tag]
         logging.debug(f"Rolled: {roll - 10}")
 
@@ -244,7 +276,7 @@ class CatanAI(Catan):
             )
             action, attributes = current_player.pick_action()
             logging.debug(f"Robber Action: {action}, Attributes: {attributes}")
-            current_player.perform_action(action, attributes)
+            current_player.perform_action(action, attributes, remove_resources=False)
         else:
             self.deliver_resource(roll)
 
@@ -274,7 +306,7 @@ class CatanAITraining:
     H = 2048  # number of hidden layer 1 neurons
     W = 1024  # number of hidden layer 2 neurons
     batch_size = 5  # every how many episodes to do a param update?
-    episodes = 10000
+    episodes = 1000
     learning_rate = 1e-5
     gamma = 0.99  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
@@ -397,7 +429,6 @@ class CatanAITraining:
             self.catan.game_start()
 
             while self.catan.game_over is False and self.catan.turn < self.max_turn:
-                self.catan.turn += 1
                 logging.debug(f"Turn {self.catan.turn}")
 
                 for player_tag, player in self.catan.players.items():
@@ -485,7 +516,7 @@ if __name__ == "__main__":
     logname = "catan_game.txt"
     logging.basicConfig(
         format="%(message)s",
-        level=20,
+        level=logging.INFO,
         # filename=logname,
         # filemode="w",
     )
