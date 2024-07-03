@@ -120,23 +120,26 @@ class Player:
 
     def calculate_longest_road(self):
         max_length_all = 0
-        for road in self.roads:
+
+        for start_road in self.roads:
             max_length_all = max(
                 self.depth_search_longest_road(
-                    road, existing_roads=[road], backward_roads=[]
+                    start_road,
+                    existing_roads=[start_road],
                 ),
                 max_length_all,
             )
         return max_length_all
 
     def depth_search_longest_road(
-        self, road, existing_roads: list, backward_roads: list
+        self,
+        road,
+        existing_roads: list,
     ):
         next_roads = [
             r
             for r in self.roads
-            if r not in backward_roads
-            and r not in existing_roads
+            if r not in existing_roads
             and r != road
             and abs(r[0] - road[0]) + abs(r[1] - road[1]) <= 3
         ]
@@ -146,7 +149,10 @@ class Player:
         assert len(next_roads) <= 4
         for next_road in next_roads:
             existing_roads.append(next_road)
-            return self.depth_search_longest_road(road, existing_roads, next_roads)
+            return self.depth_search_longest_road(
+                road,
+                existing_roads,
+            )
 
     def get_action_space(self, situation: Action = None, attributes=None):
         """
@@ -213,12 +219,15 @@ class Player:
 
             for dev_card, count in self.dev_cards.items():
                 if count > 0 and any(
-                    self.player_turn_action_list
-                    in [
-                        Action.ROADBUILDING
-                        or Action.MONOPOLY
-                        or Action.YEAROFPLENTY
-                        or Action.KNIGHT
+                    [  # only one dev card per turn
+                        action
+                        in [
+                            Action.ROADBUILDING
+                            or Action.MONOPOLY
+                            or Action.YEAROFPLENTY
+                            or Action.KNIGHT
+                        ]
+                        for action in self.player_turn_action_list
                     ]
                 ):
                     if dev_card == DevelopmentCard.KNIGHT:
@@ -244,8 +253,12 @@ class Player:
     def action_space_list_to_action_arr(self, action_space: list[Action]) -> np.array:
         out_action_space = np.zeros(len(self.catan.base_action_space))
         for idx, base_action in enumerate(self.catan.base_action_space):
+            if len(action_space) == 0:
+                break
             if base_action in action_space:
                 out_action_space[idx] = 1
+                action_space.remove(base_action)
+        assert len(action_space) == 0
         return out_action_space
 
     def action_arr_to_action_space_list(self, action_rr: np.array) -> list:
@@ -279,35 +292,28 @@ class Player:
                 owned_harbors.add(HARBOR(self.catan.harbor_ownership[spot]))
         return list(owned_harbors)
 
-    def add_all_other_resource(self, resource: Resource, count: int):
+    def add_all_other_resource(self, resource: Resource, count: int) -> set[tuple]:
         pot_trades_for_resource = set()
         for j in range(1, 6):
             if j != resource.value:
                 pot_trades_for_resource.add((resource.value, j, count))
-        return pot_trades_for_resource
+        return list(pot_trades_for_resource)
 
-    def get_potential_trade(self) -> list[tuple[int, int]]:
+    def get_potential_trade(self) -> list[set[tuple]]:
         # returns a list of tuples of the form (resource, resource, count)
         list_of_potential_trades = []
         for resource, count in self.resources.items():
             if count >= 4:
-                list_of_potential_trades.append(
-                    self.add_all_other_resource(resource, 4)
-                )
+                list_of_potential_trades += self.add_all_other_resource(resource, 4)
 
         owned_harbors = self.owned_harbors()
         for harbor in owned_harbors:
             if harbor == HARBOR.THREETOONE:
                 for resource, count in self.resources.items():
-                    if count >= 3:
-                        list_of_potential_trades.append(
-                            self.add_all_other_resource(resource, 3)
-                        )
+                    list_of_potential_trades += self.add_all_other_resource(resource, 3)
             else:
                 if self.resources[harbor.resource] >= 2:
-                    list_of_potential_trades.append(
-                        self.add_all_other_resource(harbor.resource, 2)
-                    )
+                    list_of_potential_trades += self.add_all_other_resource(resource, 2)
 
         return list_of_potential_trades
 
@@ -555,7 +561,7 @@ class Player:
     def get_potential_road(self, coords=None):
         # This only applies to the start of the game where the road has to link to a settlement
         act_settlements = (
-            [coords] if coords != None and len(self.roads) < 2 else self.settlements
+            [coords] if coords is not None and len(self.roads) < 2 else self.settlements
         )
 
         # Find all potential roads based on settlements
@@ -575,7 +581,7 @@ class Player:
 
         # Find all potential roads based on roads
         return_list_road = []
-        if coords == None:
+        if coords is None:
             for y, x in self.roads:
                 return_list_road += self.potential_road_from_road(y, x)
         return list(set(return_list_sett + return_list_road))
@@ -627,14 +633,10 @@ class Player:
         logging.info(f"Settlements : {self.settlements}")
         logging.info(f"City : {self.cities}")
         logging.info(f"Roads : {self.roads}")
-<<<<<<< HEAD
-        logging.info(f"Dev Cards : {self.dev_cards}")
-=======
         logging.info(f"Dev cards : {self.dev_cards}")
         logging.info(f"Longest road: {self.is_longest_road} {self.longest_road}")
         logging.info(f"Largest army: {self.is_largest_army} {self.largest_army}")
 
->>>>>>> fb7b814 (Model u0dates)
         logging.info(f"End Resources: {self.resources}")
         self.reward_sum = round(np.sum(np.vstack(self.r_s)))
         logging.info(f"Reward sum: {self.reward_sum}")

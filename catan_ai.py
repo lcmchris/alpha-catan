@@ -306,7 +306,7 @@ class CatanAITraining:
     H = 2048  # number of hidden layer 1 neurons
     W = 1024  # number of hidden layer 2 neurons
     batch_size = 5  # every how many episodes to do a param update?
-    episodes = 1000
+    episodes = 1
     learning_rate = 1e-5
     gamma = 0.99  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
