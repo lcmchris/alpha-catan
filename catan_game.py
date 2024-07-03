@@ -627,10 +627,14 @@ class Player:
         logging.info(f"Settlements : {self.settlements}")
         logging.info(f"City : {self.cities}")
         logging.info(f"Roads : {self.roads}")
+<<<<<<< HEAD
+        logging.info(f"Dev Cards : {self.dev_cards}")
+=======
         logging.info(f"Dev cards : {self.dev_cards}")
         logging.info(f"Longest road: {self.is_longest_road} {self.longest_road}")
         logging.info(f"Largest army: {self.is_largest_army} {self.largest_army}")
 
+>>>>>>> fb7b814 (Model u0dates)
         logging.info(f"End Resources: {self.resources}")
         self.reward_sum = round(np.sum(np.vstack(self.r_s)))
         logging.info(f"Reward sum: {self.reward_sum}")
