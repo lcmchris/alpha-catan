@@ -51,7 +51,7 @@ class HARBOR(Enum):
         obj.resource = resource
         return obj
 
-    def __init__(self, tag: int, resource) -> None:
+    def __init__(self, tag: int, resource: Resource) -> None:
         self.tag = tag
         self.resource = resource
 
@@ -103,7 +103,7 @@ class Player:
 
         self.actions_taken: list[Action] = []
         self.reward_sum = 0
-        self.player_turn_action_list = []
+        self.player_turn_action_list: list[Action] = []
 
     def recalc_points(self):
         self.points = (
@@ -112,11 +112,16 @@ class Player:
             + self.dev_cards[DevelopmentCard.VP]
         )
         logging.debug(f"Player {self.tag} has {self.points} points")
-        if self.points >= 10:
+        if self.points >= self.catan.max_points:
             logging.info(f"Player {self.tag} wins!")
 
             self.catan.game_over = True
             self.catan.winner = self.tag
+
+    def get_opponents(self):
+        return [
+            player for player in self.catan.players.values() if player.tag != self.tag
+        ]
 
     def calculate_longest_road(self):
         max_length_all = 0
@@ -178,8 +183,10 @@ class Player:
         elif situation is not None and not isinstance(situation, Action):
             raise Exception("Invalid situation")
         else:
+            # Default pass action
             action_space_list.append((Action.PASS, None))
 
+            # Road action
             if (
                 self.resources[Resource.BRICK] >= 1
                 and self.resources[Resource.LUMBER] >= 1
@@ -188,6 +195,7 @@ class Player:
                 for road in self.potential_road:
                     action_space_list.append((Action.ROAD, road))
 
+            # Settlement action
             if (
                 self.resources[Resource.BRICK] >= 1
                 and self.resources[Resource.LUMBER] >= 1
@@ -198,6 +206,7 @@ class Player:
                 for settlement in self.potential_settlement:
                     action_space_list.append((Action.SETTLEMENT, settlement))
 
+            # City Action
             if (
                 self.resources[Resource.ORE] >= 3
                 and self.resources[Resource.GRAIN] >= 2
@@ -206,6 +215,7 @@ class Player:
                 for city in self.potential_city:
                     action_space_list.append((Action.CITY, city))
 
+            # Buy Dev card
             if (
                 self.resources[Resource.ORE] >= 1
                 and self.resources[Resource.GRAIN] >= 1
@@ -213,15 +223,11 @@ class Player:
             ) and len(self.catan.dev_card_deck) > 0:
                 action_space_list.append((Action.BUYDEVCARD, None))
 
-            self.potential_trade = self.get_potential_trade()
-            for trade in self.potential_trade:
-                action_space_list.append((Action.TRADE, trade))
-
             for dev_card, count in self.dev_cards.items():
-                if count > 0 and any(
+                if count > 0 and all(
                     [  # only one dev card per turn
                         action
-                        in [
+                        not in [
                             Action.ROADBUILDING
                             or Action.MONOPOLY
                             or Action.YEAROFPLENTY
@@ -242,9 +248,17 @@ class Player:
                                 (Action.ROADBUILDING, potential_road_building)
                             )
                     elif dev_card == DevelopmentCard.YEAROFPLENTY:
-                        action_space_list.append(self.catan.get_year_of_plenty())
+                        for attr in self.catan.get_year_of_plenty():
+                            action_space_list.append((Action.YEAROFPLENTY, attr))
                     elif dev_card == DevelopmentCard.MONOPOLY:
-                        action_space_list.append(self.catan.get_monopoly())
+                        for attr in self.catan.get_monopoly():
+                            action_space_list.append((Action.MONOPOLY, attr))
+
+            # Trade actions
+            self.potential_trade = self.get_potential_trade()
+            for trade in self.potential_trade:
+                action_space_list.append((Action.TRADE, trade))
+
         action_space = self.action_space_list_to_action_arr(action_space_list)
         logging.debug("Action space list: ")
         logging.debug(action_space_list)
@@ -252,6 +266,7 @@ class Player:
 
     def action_space_list_to_action_arr(self, action_space: list[Action]) -> np.array:
         out_action_space = np.zeros(len(self.catan.base_action_space))
+        action_space = list(set(action_space))
         for idx, base_action in enumerate(self.catan.base_action_space):
             if len(action_space) == 0:
                 break
@@ -292,34 +307,43 @@ class Player:
                 owned_harbors.add(HARBOR(self.catan.harbor_ownership[spot]))
         return list(owned_harbors)
 
-    def add_all_other_resource(self, resource: Resource, count: int) -> set[tuple]:
+    def add_all_other_resource(self, resource_in: Resource, count: int) -> set[tuple]:
         pot_trades_for_resource = set()
-        for j in range(1, 6):
-            if j != resource.value:
-                pot_trades_for_resource.add((resource.value, j, count))
+        for resource_out in list(Resource):
+            if resource_out != resource_in and resource_out != Resource.DESERT:
+                pot_trades_for_resource.add((resource_in, resource_out, count))
         return list(pot_trades_for_resource)
 
     def get_potential_trade(self) -> list[set[tuple]]:
         # returns a list of tuples of the form (resource, resource, count)
         list_of_potential_trades = []
-        for resource, count in self.resources.items():
+        for resource_in_4, count in self.resources.items():
             if count >= 4:
-                list_of_potential_trades += self.add_all_other_resource(resource, 4)
+                list_of_potential_trades += self.add_all_other_resource(
+                    resource_in_4, 4
+                )
 
-        owned_harbors = self.owned_harbors()
-        for harbor in owned_harbors:
+        self.my_owned_harbors = self.owned_harbors()
+        for harbor in self.my_owned_harbors:
             if harbor == HARBOR.THREETOONE:
-                for resource, count in self.resources.items():
-                    list_of_potential_trades += self.add_all_other_resource(resource, 3)
+                for resource_in_3, count in self.resources.items():
+                    if count >= 3:
+                        list_of_potential_trades += self.add_all_other_resource(
+                            resource_in_3, 3
+                        )
             else:
                 if self.resources[harbor.resource] >= 2:
-                    list_of_potential_trades += self.add_all_other_resource(resource, 2)
+                    list_of_potential_trades += self.add_all_other_resource(
+                        harbor.resource, 2
+                    )
 
         return list_of_potential_trades
 
     def get_potential_road_building(self):
+        # Get the potential 2 roads to build. Which one is first does not matter so use sets instead of lists.
+        # After road one, there are more opputunities to build from.
         potential_first_roads = self.get_potential_road()
-        base_combinations = set(
+        all_combinations = set(
             frozenset([road_1, road_2])
             for (road_1, road_2) in combinations(potential_first_roads, 2)
         )
@@ -329,9 +353,9 @@ class Player:
             new_potential_roads = self.potential_road_from_road(y, x)
             for road_2 in new_potential_roads:
                 potential_new_combination = frozenset([potential_road, road_2])
-                base_combinations.add(potential_new_combination)
+                all_combinations.add(potential_new_combination)
 
-        return list(base_combinations)
+        return list(all_combinations)
 
     def perform_action(self, action: Action, attributes, remove_resources=True):
         if action == Action.PASS:
@@ -358,11 +382,19 @@ class Player:
             self.year_of_plenty_action(attributes)
         elif action == Action.MONOPOLY:
             self.monopoly_action(attributes)
-        elif action == Action.KNIGHT:
-            self.place_robber(attributes)
         else:
             raise ValueError("action not in action space")
+
+        # Perform some assertions
+        # All resources needs to be postivite
         assert all(val >= 0 for val in self.resources.values())
+
+        # The counts of resource and dev cards match their totals.
+
+        for dev_card, total_count_dev_cards in self.catan.dev_card_count.items():
+            for tag, player in self.catan.players.items():
+                total_count_dev_cards += player.dev_cards[dev_card]
+            total_count_dev_cards == self.catan.dev_card_count_static[dev_card]
 
     def road_building_action(self, both_roads: frozenset[tuple]):
         assert len(both_roads) == 2
@@ -371,17 +403,18 @@ class Player:
             self.build_road(coords=road, remove_resources=False)
         self.dev_cards[DevelopmentCard.ROADBUILDING] -= 1
 
-    def year_of_plenty_action(self, resources_pair: tuple[Resource, Resource]) -> None:
-        resource_1 = resources_pair[0]
-        resource_2 = resources_pair[1]
-        self.resources[Resource(resource_1)] += 1
-        self.resources[Resource(resource_2)] += 1
+    def year_of_plenty_action(
+        self, resources_pair: frozenset[Resource, Resource]
+    ) -> None:
+        for resource in resources_pair:
+            self.resources[Resource(resource)] += 1
         self.dev_cards[DevelopmentCard.YEAROFPLENTY] -= 1
 
     def monopoly_action(self, resource: Resource):
         for player in self.catan.players.values():
             if player != self:
                 stolen_resources = player.resources[resource]
+                player.resources[resource] = 0
                 self.resources[resource] += stolen_resources
         self.dev_cards[DevelopmentCard.MONOPOLY] -= 1
 
@@ -391,7 +424,9 @@ class Player:
         self.resources[Resource.GRAIN] -= 1
 
         bought_dev_card = self.catan.dev_card_deck.pop()
+
         self.dev_cards[bought_dev_card] += 1
+        self.catan.dev_card_count[bought_dev_card] -= 1
 
     def build_settlement(self, coords: tuple, remove_resources=True):
         # examing where I can build a settlement
@@ -467,12 +502,8 @@ class Player:
         (y, x) = coords
 
         list_of_potential_owners = [
-            [y - 4, x],
-            [y + 2, x],
-            [y, x + 2],
-            [y, x - 2],
-            [y - 2, x + 2],
-            [y - 2, x - 2],
+            [diff_y + y - 1, diff_x + x]
+            for diff_y, diff_x in self.catan.settlement_diff_from_center
         ]
         for y, x in list_of_potential_owners:
             potential_opponent = self.catan.board[y, x]
@@ -612,16 +643,39 @@ class Player:
     def get_potential_city(self):
         return self.settlements
 
-    def player_preturn_debug(self):
-        logging.debug(f"<-- Player {self.tag} -->")
+    def get_potential_robber_spots(self):
+        # with friendly robber activated, you cannot place robber next to someone with less than three points.
+        opponents = self.get_opponents()
+        center_coords = self.catan.center_coords
+        for opponent in opponents:
+            if len(opponent.points < 3):
+                for y, x in self.catan.center_coords:
+                    is_any_opponent = False
+                    for diff_y, diff_x in self.catan.settlement_diff_from_center:
+                        potential_settle_y = diff_y + y
+                        potential_settle_x = diff_x + x
+                        if (
+                            self.catan.board[potential_settle_y, potential_settle_x]
+                            == opponent.tag
+                        ):
+                            is_any_opponent = True
+                            break
 
-    def player_posturn_debug(self):
+                    if is_any_opponent:
+                        center_coords.remove([potential_settle_y, potential_settle_x])
+        return center_coords
+
+    def player_preturn_debug(self):
+        logging.debug("\n")
         logging.debug(f"<-- Player {self.tag} -->")
         logging.debug(f"Resources: {self.resources}")
+
+    def player_posturn_debug(self):
+        logging.debug("\n")
+        logging.debug(f"Actions Taken Turn: {self.player_turn_action_list}")
+        logging.debug(f"Resources: {self.resources}")
         logging.debug(f"Points: {self.points}")
-        logging.debug(f"Potential sett: {self.potential_settlement}")
-        logging.debug(f"Potential road: {self.potential_road}")
-        logging.debug(f"Potential trade: {self.potential_trade}")
+        self.catan.print_board(debug=True)
 
     def player_episode_audit(self):
         logging.info(f"<-- Player {self.tag} -->")
@@ -649,6 +703,14 @@ class Catan:
         self.robber_tag = 50
         self.dummy_robber_tag = 52
 
+        self.max_points = 15
+        self.dev_card_count_static = {
+            DevelopmentCard.KNIGHT: 14,
+            DevelopmentCard.VP: 5,
+            DevelopmentCard.ROADBUILDING: 2,
+            DevelopmentCard.YEAROFPLENTY: 2,
+            DevelopmentCard.MONOPOLY: 2,
+        }
         self.dev_card_count = {
             DevelopmentCard.KNIGHT: 14,
             DevelopmentCard.VP: 5,
@@ -669,6 +731,7 @@ class Catan:
             "roads": 15,
         }
         self.resources_tag = {"brick": 1, "lumber": 2, "ore": 3, "grain": 4, "wool": 5}
+
         self.resource_card_count = {
             # name, count, tile_count
             Resource.BRICK: 19,
@@ -734,6 +797,14 @@ class Catan:
             (13, 4),(13, 8),(13, 12),(13, 16),(13, 20),
             (17, 6),(17, 10),(17, 14),(17, 18),
             (21, 8),(21, 12),(21, 16),
+        ]
+        self.settlement_diff_from_center = [
+            [-3,0],
+            [3,0],
+            [1,2],
+            [1,-2],
+            [-1,2],
+            [-1,-2],
         ]
         # fmt: on
         self.game_over = False
@@ -837,7 +908,7 @@ class Catan:
 
     def get_year_of_plenty(self):
         return [
-            (resource_1, resource_2)
+            frozenset([resource_1, resource_2])
             for (resource_1, resource_2) in combinations(self.resources_list, 2)
         ]
 
@@ -889,7 +960,7 @@ class Catan:
 
         board_string = np.array2string(board)
         board_string = board_string.replace(f"{zero_tmp}", "  ")
-        print(board_string)
+        logging.debug(board_string)
 
     def generate_board(self):
         resource_list = [
@@ -948,27 +1019,27 @@ class Catan:
         return arr
 
     def deliver_resource(self, roll):
+        # Deliver resources by the roll. Blocked resource if knight is in play.
         resource_hit = np.argwhere(self.board == roll)
 
         for y, x in resource_hit:
-            list_of_potential_owners = [
-                [y - 4, x],
-                [y + 2, x],
-                [y, x + 2],
-                [y, x - 2],
-                [y - 2, x + 2],
-                [y - 2, x - 2],
-            ]
             resource_type = Resource(self.board[y - 2, x])
 
-            if resource_type == Resource.DESERT:
+            if (
+                resource_type == Resource.DESERT
+                or self.board[y - 1, x] is self.robber_tag
+            ):
                 continue
             else:
+                list_of_potential_owners = [
+                    [diff_y + y - 1, diff_x + x]
+                    for diff_y, diff_x in self.settlement_diff_from_center
+                ]
                 for potential_y, potential_x in list_of_potential_owners:
                     owner_tag = self.board[potential_y, potential_x]
 
                     if owner_tag != -1:
-                        resource_num = 1 if owner_tag >= -10 else 2
+                        resource_num = 1 if owner_tag >= -10 else 2  # Settle or city
                         owner_tag = owner_tag if owner_tag >= -10 else owner_tag + 10
                         self.add_resource(owner_tag, resource_type, resource_num)
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from pathlib import Path
 import random
 import numpy as np
 import pickle
@@ -16,7 +16,14 @@ class PlayerType(Enum):
 
 
 class PlayerAI(Player):
-    def __init__(self, catan: CatanAI, tag: int, player_type: PlayerType) -> None:
+    def __init__(
+        self,
+        catan: CatanAI,
+        tag: int,
+        player_type: PlayerType,
+        reward_matrix_dict: dict = {"win": 0, "loss": 0},
+    ) -> None:
+        self.reward_matrix_dict: dict = reward_matrix_dict
         self.player_type = player_type
         self.tag = tag
         (
@@ -63,7 +70,7 @@ class PlayerAI(Player):
             + (2 if self.is_largest_army else 0)
         )
         logging.debug(f"Player {self.tag} has {self.points} points")
-        if self.points >= 10:
+        if self.points >= self.catan.max_points:
             self.r_s[-1] += self.reward_matrix("win")
 
             # give other players a negative reward
@@ -122,6 +129,7 @@ class PlayerAI(Player):
             dev_cards_arr = np.append(dev_cards_arr, [sum(player.dev_cards.values())])
 
         board = self.catan.board.ravel().astype(np.float64)
+        board_uniques = np.unique(board)
         board = np.delete(board, np.where(board == 0))  # crop
         board = self.one_hot_encoder_board(board)
 
@@ -142,7 +150,6 @@ class PlayerAI(Player):
             action, attributes = random.choice(
                 self.action_arr_to_action_space_list(self.action_space)
             )
-            # reward = self.reward_matrix(action)
             self.r_s.append(0)
 
             return action, attributes
@@ -153,8 +160,8 @@ class PlayerAI(Player):
 
             x = self.prepro()  # append board state
 
-            z1, a1, z2, a2, z3, a3 = self.catan.catan_training.policy_forward(
-                x, self.action_space
+            z1, a1, z2, a2, z3, a3 = policy_forward(
+                x, self.action_space, self.catan.catan_training.model
             )
 
             self.x_s.append(x)
@@ -175,18 +182,14 @@ class PlayerAI(Player):
             action, attributes = self.action_idx_to_action_tuple(action_idx)
             self.actions_taken.append(action)
 
-            # reward = self.reward_matrix(action)
             self.r_s.append(0)
 
             return action, attributes
 
-    def reward_matrix(self, action):
-        reward_matrix = {
-            "win": (self.points**2 - 6**2) + 2000 * (1 / (self.catan.turn + 1)),
-            "loss": self.points**2 - 6**2,
-        }
+    def reward_matrix(self, action: str) -> int:
+        # """Scaling reward by points and winning"""
 
-        return reward_matrix[action]
+        return self.reward_matrix_dict[action]
 
     def player_turn(self):
         action = None
@@ -223,12 +226,14 @@ class CatanAI(Catan):
         seed,
         player_count: int,
         player_type: list[PlayerType],
+        player_matrices: list[dict],
         mode: str,
         catan_training: CatanAITraining,
     ) -> None:
         self.seed = seed
         self.player_count = player_count
         self.player_type = player_type
+        self.player_matrices = player_matrices
         self.mode = mode
         self.catan_training: CatanAITraining = catan_training
 
@@ -244,6 +249,7 @@ class CatanAI(Catan):
                 catan=self,
                 tag=i - 9,
                 player_type=self.player_type[i],
+                reward_matrix_dict=self.player_matrices[i],
             )
             players[i - 9] = player
         return players
@@ -265,6 +271,9 @@ class CatanAI(Catan):
         roll = self.roll()
         self.turn += 1
         current_player = self.players[player_tag]
+
+        logging.debug("\n")
+        logging.debug("<--Board-->")
         logging.debug(f"Rolled: {roll - 10}")
 
         if roll == 17:
@@ -299,18 +308,41 @@ def relu(x):
     return x
 
 
+def policy_forward(x, action_space, model):
+    # forward pass: Take in board state, return probability of taking action [0,1,2,3]
+    # Ne = Neurons in hidden state. As = Action Space
+    z1 = model["W1"] @ x  # Ne x 483 * 483 x M = Ne x M
+    a1 = relu(z1)  # Ne x M
+
+    z2 = model["W2"] @ a1  # Ne x 483 * 483 x M = Ne x M
+    a2 = relu(z2)  # Ne x M
+
+    z3 = model["W3"] @ a2  # As x Ne * Ne x M = As x M
+    m3 = np.multiply(z3, action_space)
+    a3 = softmax(m3)  # As x M
+
+    return (
+        z1,
+        a1,
+        z2,
+        a2,
+        z3,
+        a3,
+    )  # return probability of taking action, and hidden state
+
+
 class CatanAITraining:
     # Model_base
     # Hyperparameters
 
     H = 2048  # number of hidden layer 1 neurons
     W = 1024  # number of hidden layer 2 neurons
-    batch_size = 5  # every how many episodes to do a param update?
-    episodes = 1
+    batch_size = 10  # every how many episodes to do a param update?
+    episodes = 100000
     learning_rate = 1e-5
     gamma = 0.99  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
-    max_turn = 500
+    max_turn = 350
     player_type = [PlayerType.MODEL, PlayerType.MODEL]  # model | random
     player_count = 2  # 1 - 4
     # Stacking
@@ -318,11 +350,22 @@ class CatanAITraining:
     turn_list = []
     reward_list = []
 
+    reward_matrices = {
+        # "win_10": {"win": 10, "loss": 0},
+        # "win_10_loss_10": {"win": 10, "loss": -10},
+        # "win_50": {"win": 50, "loss": 0},
+        # "win_50_loss_10": {"win": 50, "loss": -10},
+        # "win_100": {"win": 100, "loss": 0},
+        "win_100_loss_50_100kep": {"win": 100, "loss": -50},
+        # "win_100_loss_100": {"win": 100, "loss": -100},
+    }
+
     def __init__(self):
         # create dummy catan game to get action spaces
         catan = CatanAI(
             seed=1,
             player_type=self.player_type,
+            player_matrices=[{"win": 10, "loss": 0}, {"win": 10, "loss": 0}],
             player_count=self.player_count,
             mode="multi",
             catan_training=self,
@@ -354,28 +397,6 @@ class CatanAITraining:
             k: np.zeros_like(v) for k, v in self.model.items()
         }  # rmsprop memory
 
-    def policy_forward(self, x, action_space):
-        # forward pass: Take in board state, return probability of taking action [0,1,2,3]
-        # Ne = Neurons in hidden state. As = Action Space
-        z1 = self.model["W1"] @ x  # Ne x 483 * 483 x M = Ne x M
-        a1 = relu(z1)  # Ne x M
-
-        z2 = self.model["W2"] @ a1  # Ne x 483 * 483 x M = Ne x M
-        a2 = relu(z2)  # Ne x M
-
-        z3 = self.model["W3"] @ a2  # As x Ne * Ne x M = As x M
-        m3 = np.multiply(z3, action_space)
-        a3 = softmax(m3)  # As x M
-
-        return (
-            z1,
-            a1,
-            z2,
-            a2,
-            z3,
-            a3,
-        )  # return probability of taking action, and hidden state
-
     def discount_rewards(self, r):
         """take 1D float array of rewards and compute discounted reward"""
         discounted_r = np.zeros_like(r)
@@ -406,118 +427,178 @@ class CatanAITraining:
 
         return {"W1": dW1, "W2": dW2, "W3": dW3}
 
-    def plot_running_avg(self, y: list, window=10):
+    def plot_running_avg(
+        self,
+        y: list,
+        fig_path: str,
+        window=10,
+    ):
         average_y = []
         for ind in range(len(y) - window + 1):
             average_y.append(np.mean(y[ind : ind + window]))
 
         plt.plot(average_y)
-        plt.show()
+        plt.savefig(fig_path)
+        plt.close()
+
+    def play_game_existing_model(self, model_path):
+        logging.basicConfig(
+            format="%(message)s",
+            level=logging.DEBUG,
+            filename="running.txt",
+            filemode="w",
+            force=True,
+        )
+        parent = Path(__file__).parent.resolve()
+        model_path = parent.joinpath(model_path)
+        with open(model_path, "rb") as f:
+            self.model = pickle.load(f)
+        self.catan = CatanAI(
+            seed=1,
+            player_type=self.player_type,
+            player_matrices=[{"win": 0, "loss": 0}, {"win": 0, "loss": 0}],
+            player_count=self.player_count,
+            mode="multi",
+            catan_training=self,
+        )
+
+        self.catan.game_start()
+
+        while self.catan.game_over is False and self.catan.turn < self.max_turn:
+            logging.debug(f"Turn {self.catan.turn}")
+
+            for player_tag, player in self.catan.players.items():
+                # Phase 1: roll dice and get resources
+                self.catan.board_turn(player_tag)
+                # Phase 2: player performs actions
+                player.player_preturn_debug()
+                player.player_turn()
+                player.recalc_points()
+                player.player_posturn_debug()
 
     def training(self):
-        # Run experiment
-        for episode in range(self.episodes):
-            logging.info(f"Episode {episode}")
-            self.catan = CatanAI(
-                seed=episode,
-                player_type=self.player_type,
-                player_count=self.player_count,
-                mode="multi",
-                catan_training=self,
+        for name, matrix in self.reward_matrices.items():
+            # Run experiment
+            Path.mkdir(Path(f"models/{name}"), exist_ok=True)
+            logname = f"models/{name}/catan_game.txt"
+            logging.basicConfig(
+                format="%(message)s",
+                level=logging.INFO,
+                filename=logname,
+                filemode="w",
+                force=True,
             )
+            for episode in range(self.episodes):
+                logging.info(f"Episode {episode}")
+                self.catan = CatanAI(
+                    seed=episode,
+                    player_type=self.player_type,
+                    player_matrices=[matrix, matrix],
+                    player_count=self.player_count,
+                    mode="multi",
+                    catan_training=self,
+                )
 
-            self.catan.game_start()
+                self.catan.game_start()
 
-            while self.catan.game_over is False and self.catan.turn < self.max_turn:
-                logging.debug(f"Turn {self.catan.turn}")
+                while self.catan.game_over is False and self.catan.turn < self.max_turn:
+                    logging.debug(f"Turn {self.catan.turn}")
+
+                    for player_tag, player in self.catan.players.items():
+                        # Phase 1: roll dice and get resources
+                        self.catan.board_turn(player_tag)
+                        # Phase 2: player performs actions
+                        player.player_preturn_debug()
+                        player.player_turn()
+                        player.recalc_points()
+                        player.player_posturn_debug()
+
+                logging.info("End board state:")
+                self.catan.print_board(debug=False)
+
+                # Episode Audit
+                max_points = max(
+                    [player.points for player in self.catan.players.values()]
+                )
+                for player_tag, player in self.catan.players.items():
+                    if self.catan.turn == self.max_turn and player.points != max_points:
+                        player.r_s[-1] += player.reward_matrix("loss")
+
+                    player.player_episode_audit()
+
+                logging.info(
+                    f"Game finished in {self.catan.turn} turns. Winner: {self.catan.winner}"
+                )
+                self.turn_list.append(self.catan.turn)
+                self.reward_list.append(player.reward_sum)
 
                 for player_tag, player in self.catan.players.items():
-                    # Phase 1: roll dice and get resources
-                    self.catan.board_turn(player_tag)
-                    # Phase 2: player performs actions
-                    player.player_preturn_debug()
-                    player.player_turn()
-                    player.recalc_points()
-                    player.player_posturn_debug()
+                    if player.player_type == PlayerType.MODEL:
+                        # stack together all inputs, hidden states, action gradients, and rewards for this episode
+                        ep_x_s = np.vstack(player.x_s)
+                        ep_z1_s = np.vstack(player.z1_s)
+                        ep_a1_s = np.vstack(player.a1_s)
+                        ep_z2_s = np.vstack(player.z2_s)
+                        ep_a2_s = np.vstack(player.a2_s)
+                        ep_z3_s = np.vstack(player.z3_s)
+                        ep_a3_s = np.vstack(player.a3_s)
+                        ep_y_s = np.vstack(player.y_s)
+                        ep_r_s = np.vstack(player.r_s)
 
-            logging.info("End board state:")
-            self.catan.print_board(debug=False)
+                        avg_ep_loss = (ep_a3_s - ep_y_s) / len(ep_y_s)
 
-            # Episode Audit
-            for player_tag, player in self.catan.players.items():
-                if self.catan.turn == self.max_turn:
-                    player.r_s[-1] += player.reward_matrix("loss")
+                        grad = self.policy_backward(
+                            ep_x_s,
+                            ep_z1_s,
+                            ep_a1_s,
+                            ep_z2_s,
+                            ep_a2_s,
+                            ep_z3_s,
+                            ep_a3_s,
+                            ep_y_s,
+                            ep_r_s,
+                        )
+                        for k in self.model:
+                            self.grad_buffer[k] += grad[k]  # accumulate grad over batch
 
-                player.player_episode_audit()
+                        # perform rmsprop parameter update every batch_size episodes
+                        if episode % self.batch_size == 0:
+                            for k, v in self.model.items():
+                                g = self.grad_buffer[k]  # gradient
+                                self.rmsprop_cache[k] = (
+                                    self.decay_rate * self.rmsprop_cache[k]
+                                    + (1 - self.decay_rate) * g**2
+                                )
+                                self.model[k] -= (
+                                    self.learning_rate
+                                    * g
+                                    / (np.sqrt(self.rmsprop_cache[k]) + 1e-7)
+                                )
+                                self.grad_buffer[k] = np.zeros_like(
+                                    v
+                                )  # reset batch gradient buffer
 
-            logging.info(
-                f"Game finished in {self.catan.turn} turns. Winner: {self.catan.winner}"
+            # save model
+            Path.open(f"models/{name}/catan_model.pickle", "wb")
+            pickle.dump(
+                self.model, Path.open(f"models/{name}/catan_model.pickle", "wb")
             )
-            self.turn_list.append(self.catan.turn)
-            self.reward_list.append(player.reward_sum)
+            pickle.dump(
+                self.turn_list, Path.open(f"models/{name}/turn_list.pickle", "wb")
+            )
+            pickle.dump(
+                self.reward_list, Path.open(f"models/{name}/reward_list.pickle", "wb")
+            )
 
-            for player_tag, player in self.catan.players.items():
-                if player.player_type == PlayerType.MODEL:
-                    # stack together all inputs, hidden states, action gradients, and rewards for this episode
-                    ep_x_s = np.vstack(player.x_s)
-                    ep_z1_s = np.vstack(player.z1_s)
-                    ep_a1_s = np.vstack(player.a1_s)
-                    ep_z2_s = np.vstack(player.z2_s)
-                    ep_a2_s = np.vstack(player.a2_s)
-                    ep_z3_s = np.vstack(player.z3_s)
-                    ep_a3_s = np.vstack(player.a3_s)
-                    ep_y_s = np.vstack(player.y_s)
-                    ep_r_s = np.vstack(player.r_s)
-
-                    avg_ep_loss = (ep_a3_s - ep_y_s) / len(ep_y_s)
-
-                    grad = self.policy_backward(
-                        ep_x_s,
-                        ep_z1_s,
-                        ep_a1_s,
-                        ep_z2_s,
-                        ep_a2_s,
-                        ep_z3_s,
-                        ep_a3_s,
-                        ep_y_s,
-                        ep_r_s,
-                    )
-                    for k in self.model:
-                        self.grad_buffer[k] += grad[k]  # accumulate grad over batch
-
-                    # perform rmsprop parameter update every batch_size episodes
-                    if episode % self.batch_size == 0:
-                        for k, v in self.model.items():
-                            g = self.grad_buffer[k]  # gradient
-                            self.rmsprop_cache[k] = (
-                                self.decay_rate * self.rmsprop_cache[k]
-                                + (1 - self.decay_rate) * g**2
-                            )
-                            self.model[k] -= (
-                                self.learning_rate
-                                * g
-                                / (np.sqrt(self.rmsprop_cache[k]) + 1e-7)
-                            )
-                            self.grad_buffer[k] = np.zeros_like(
-                                v
-                            )  # reset batch gradient buffer
-
-        # save model
-        pickle.dump(self.model, open("catan_model.pickle", "wb"))
-        pickle.dump(self.turn_list, open("turn_list.pickle", "wb"))
-        pickle.dump(self.reward_list, open("reward_list.pickle", "wb"))
-
-        self.plot_running_avg(self.turn_list)
-        self.plot_running_avg(self.reward_list)
+            self.plot_running_avg(self.turn_list, Path(f"models/{name}/turn_list.jpg"))
+            self.plot_running_avg(
+                self.reward_list, Path(f"models/{name}/reward_list.jpg")
+            )
 
 
 if __name__ == "__main__":
     #
-    logname = "catan_game.txt"
-    logging.basicConfig(
-        format="%(message)s",
-        level=logging.INFO,
-        # filename=logname,
-        # filemode="w",
+    # CatanAITraining().training()
+    CatanAITraining().play_game_existing_model(
+        "models/win_100_loss_50_100kep/catan_model.pickle"
     )
-    CatanAITraining().training()

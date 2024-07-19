@@ -4,7 +4,7 @@ import pathlib
 import cv2 as cv2
 import numpy as np
 from catan_game import Catan, Player
-from catan_ai import CatanAITraining, PlayerAI, PlayerType
+from catan_ai import CatanAITraining, PlayerAI, PlayerType, policy_forward
 import pickle
 from catan_ai import relu, softmax
 import logging
@@ -15,33 +15,32 @@ start_time = time.time()
 class ColonistIOAutomator(Catan):
     """
     Colonist automator automates a game on the colonist.io platform using a pre-build model from catan_ai.
-
     """
-
-    starting_coords = [80, 80]
-    x_spacing = 50
-    y_1_spacing = 30
-    y_2_spacing = 60
-    selection_spacing = 45
-    nodes_count = [3, 4, 4, 5, 5, 6, 6, 5, 5, 4, 4, 3]
-    road = y_1_spacing / 2
-    match_method = cv2.TM_CCOEFF_NORMED
-    tile_count = 2  # 2 tiles per number
-    box_size = (45, 85)
-    # fmt: off
-    box_coords = {
-        ( 90,210): (5, 8),( 90,310): (5, 12),(90,410): (5, 16),
-        ( 180,160): (9, 6),( 180,260): (9, 10),( 180,360): (9, 14),( 180,460): (9, 18),
-        ( 270,110): (13, 4),(270,210): (13, 8),( 270,310): (13, 12),( 270,410): (13, 16),(270,510): (13, 20),
-        ( 360,160): (17, 6),(360,260): (17, 10),( 360,360): (17, 14),( 360,460): (17, 18),
-        ( 470,210): (21, 8),( 470,310): (21, 12),(470,410): (21, 16)
-        }
-
-    # fmt: on
-    selection_spacing = 45
 
     def __init__(self, model_path: str) -> None:
         super().__init__()
+
+        self.selection_spacing = 45
+        self.starting_coords = [80, 80]
+        self.x_spacing = 50
+        self.y_1_spacing = 30
+        self.y_2_spacing = 60
+        self.selection_spacing = 45
+        self.nodes_count = [3, 4, 4, 5, 5, 6, 6, 5, 5, 4, 4, 3]
+        self.road = self.y_1_spacing / 2
+        self.match_method = cv2.TM_CCOEFF_NORMED
+        self.tile_count = 2  # 2 tiles per number
+        self.box_size = (45, 85)
+        # fmt: off
+        self.box_coords = {
+            ( 90,210): (5, 8),( 90,310): (5, 12),(90,410): (5, 16),
+            ( 180,160): (9, 6),( 180,260): (9, 10),( 180,360): (9, 14),( 180,460): (9, 18),
+            ( 270,110): (13, 4),(270,210): (13, 8),( 270,310): (13, 12),( 270,410): (13, 16),(270,510): (13, 20),
+            ( 360,160): (17, 6),(360,260): (17, 10),( 360,360): (17, 14),( 360,460): (17, 18),
+            ( 470,210): (21, 8),( 470,310): (21, 12),(470,410): (21, 16)
+            }
+
+
         self.n_action = 0
         self.pr = sync_playwright().start()
         self.page = self.create_page()
@@ -373,7 +372,7 @@ class ColonistIOAutomator(Catan):
                     (y, x) = coord
 
                 assert coord in self.center_coords
-                self.board[y + 1, x] = tile
+                self.board[y + 1, x] = tile + 10
 
     def set_board_tiles_ocr(self):
         canvas_img = self.canvas_img.copy()
@@ -474,32 +473,10 @@ class PlayerAutomator(PlayerAI):
         super().__init__(catan=catan, tag=tag, player_type=PlayerType.MODEL)
         self.catan: ColonistIOAutomator
 
-    def policy_forward(self, x, mask):
-        # forward pass: Take in board state, return probability of taking action [0,1,2,3]
-        # Ne = Neurons in hidden state. As = Action Space
-        z1 = self.catan.model["W1"] @ x  # Ne x 483 * 483 x M = Ne x M
-        a1 = relu(z1)  # Ne x M
-
-        z2 = self.catan.model["W2"] @ a1  # Ne x 483 * 483 x M = Ne x M
-        a2 = relu(z2)  # Ne x M
-
-        z3 = self.catan.model["W3"] @ a2  # As x Ne * Ne x M = As x M
-        m3 = np.multiply(z3, mask)
-        a3 = softmax(m3)  # As x M
-
-        return (
-            z1,
-            a1,
-            z2,
-            a2,
-            z3,
-            a3,
-        )  # return probability of taking action [0,1,2,3], and hidden state
-
     def pick_action(self):
         x = self.prepro()  # append board state
-        z1, a1, z2, a2, z3, a3 = self.policy_forward(
-            x=x, action_space=self.action_space
+        z1, a1, z2, a2, z3, a3 = policy_forward(
+            x=x, action_space=self.action_space, model=self.catan.model
         )
 
         action_idx = np.argmax(a3)  # pick action with highest
@@ -507,21 +484,21 @@ class PlayerAutomator(PlayerAI):
 
         return action, attributes
 
-    def perform_action(self, action, attributes, situation=False):
-        if action == 0:
-            pass
-        elif action == 1:
-            self.build_road(attributes)
-        elif action == 2:
-            self.build_settlement(attributes)
-        elif action == 3:
-            self.build_city(attributes)
-        elif action == 4:
-            self.trade_with_bank(attributes)
-        elif action == 5:
-            self.discard_resources(attributes)
-        else:
-            raise ValueError("action not in action space")
+    # def perform_action(self, action, attributes, situation=False):
+    #     if action == 0:
+    #         pass
+    #     elif action == 1:
+    #         self.build_road(attributes)
+    #     elif action == 2:
+    #         self.build_settlement(attributes)
+    #     elif action == 3:
+    #         self.build_city(attributes)
+    #     elif action == 4:
+    #         self.trade_with_bank(attributes)
+    #     elif action == 5:
+    #         self.discard_resources(attributes)
+    #     else:
+    #         raise ValueError("action not in action space")
 
     def click_buy(
         self,
@@ -578,7 +555,9 @@ if __name__ == "__main__":
     logging.basicConfig(
         format="%(message)s",
         level=logging.DEBUG,
-        # filename=logname,
-        # filemode="w",
+        filename="running.txt",
+        filemode="w",
     )
-    colonistUI = ColonistIOAutomator(model_path="catan_model.pickle")
+    colonistUI = ColonistIOAutomator(
+        model_path="models/win_100_loss_50_100kep/catan_model.pickle"
+    )
