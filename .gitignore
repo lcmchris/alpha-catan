@@ -131,3 +131,6 @@ dmypy.json
 # Log file
 catan_game.txt
 *.pickle
+state.json
+*.txt
+*.png

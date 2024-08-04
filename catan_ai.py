@@ -6,7 +6,7 @@ import pickle
 from matplotlib import pyplot as plt
 import logging
 from enum import Enum
-from catan_game import Player, Catan, Action, DevelopmentCard
+from catan_game import Player, Catan, Action
 from collections import OrderedDict
 
 
@@ -51,25 +51,7 @@ class PlayerAI(Player):
         self.catan = catan
 
     def recalc_points(self):
-        if self.longest_road >= 5:
-            for tag, player in self.catan.players.items():
-                if tag != self.tag:
-                    if self.longest_road > player.longest_road:
-                        self.is_longest_road = True
-        if self.largest_army >= 3:
-            for tag, player in self.catan.players.items():
-                if tag != self.tag:
-                    if self.largest_army > player.largest_army:
-                        self.is_largest_army = True
-
-        self.points = (
-            len(self.settlements)
-            + 2 * len(self.cities)
-            + self.dev_cards[DevelopmentCard.VP]
-            + (2 if self.is_longest_road else 0)
-            + (2 if self.is_largest_army else 0)
-        )
-        logging.debug(f"Player {self.tag} has {self.points} points")
+        super().recalc_points()
         if self.points >= self.catan.max_points:
             self.r_s[-1] += self.reward_matrix("win")
 
@@ -78,14 +60,11 @@ class PlayerAI(Player):
                 if tag != self.tag:
                     player.r_s[-1] += self.reward_matrix("loss")
 
-            logging.info(f"Player {self.tag} wins!")
-
-            self.catan.game_over = True
-            self.catan.winner = self.tag
+            logging.debug(f"Player {self.tag} wins!")
 
     def discard_resources_turn(self):
         if sum(self.resources.values()) > 7:
-            if self.catan.player_type == PlayerType.RANDOM:
+            if self.player_type == PlayerType.RANDOM:
                 self.discard_resources_random()
             elif self.player_type == PlayerType.MODEL:
                 self.discard_resources_model()
@@ -123,18 +102,21 @@ class PlayerAI(Player):
             first_player = next(iter(players))
 
         for player in players.values():
-            resource_arr = np.append(
-                resource_arr, [resource for resource in player.resources.values()]
+            resource_arr = np.append(resource_arr, list(player.resources.values()))
+            dev_cards_arr = np.append(dev_cards_arr, [player.dev_card_count])
+            dev_cards_arr = np.append(
+                dev_cards_arr, list(player.dev_card_used.values())
             )
-            dev_cards_arr = np.append(dev_cards_arr, [sum(player.dev_cards.values())])
 
         board = self.catan.board.ravel().astype(np.int8)
         board = np.delete(board, np.where(board == 0))  # crop
         board = self.one_hot_encoder_board(board)
 
+        assert len(board) == 192
         concentated_arr = np.concatenate(
             (self.catan.turn, resource_arr, dev_cards_arr, board), axis=None
         )
+
         return concentated_arr
 
     def one_hot_encoder_board(self, board: np.ndarray):
@@ -176,6 +158,7 @@ class PlayerAI(Player):
             self.z3_s.append(z3)
             self.a3_s.append(a3)
 
+            # choose a random action based on the action probabilities returned.
             action_idx = np.random.choice(np.arange(a3.size), p=a3)
 
             # Promote the action taken (which will be adjusted by the reward)
@@ -197,15 +180,19 @@ class PlayerAI(Player):
 
     def player_turn(self):
         action = None
-        while action != Action.PASS:
+        self.dev_cards_turn = self.base_dev_cards()
+        while action is not Action.PASS:
             # get action space, pick random action, perform action. Repeat until all actions are done or hits nothing action.
-            self.action_space = self.get_action_space()
-            action, attributes = self.pick_action()
-            logging.debug(f"Action: {action}, Attributes: {attributes}")
-            self.perform_action(action, attributes)
-            self.player_turn_action_list.append(action)
-
+            action = self.player_subturn()
         self.player_turn_action_list = []
+
+    def player_subturn(self):
+        self.action_space = self.get_action_space()
+        action, attributes = self.pick_action()
+        logging.debug(f"Action: {action}, Attributes: {attributes}")
+        self.perform_action(action, attributes)
+        self.player_turn_action_list.append(action)
+        return action
 
     def player_start(self):
         # for the start we need to enforce the action space to
@@ -307,11 +294,6 @@ class CatanAI(Catan):
 
 
         # Generate coords of ownership
-        self.harbor_ownership = {
-            (harbor[0] + pos[0], harbor[1] + pos[1]): arr[harbor]
-            for harbor, positions in self.harbor_coords.items()
-            for pos in positions
-        }
         return arr
 
     def game_start(self):
@@ -321,7 +303,7 @@ class CatanAI(Catan):
         # Anticlockwise order
         for player_tag, player in reversed(self.players.items()):
             player.player_start()
-        logging.info("Game started!")
+        logging.debug("Game started!")
 
     def board_turn(self, player_tag=int):
         """
@@ -340,17 +322,21 @@ class CatanAI(Catan):
             for player in self.players.values():
                 player.discard_resources_turn()
 
-            current_player.action_space = current_player.get_action_space(
-                situation=Action.ROBBER
-            )
-            action, attributes = current_player.pick_action()
-            logging.debug(f"Robber Action: {action}, Attributes: {attributes}")
-            current_player.perform_action(action, attributes, remove_resources=False)
+            self.robber_action(current_player=current_player)
+
         else:
             self.deliver_resource(roll)
 
     def roll(self):
         return random.randint(1, 6) + random.randint(1, 6) + 10
+
+    def robber_action(self, current_player: PlayerAI):
+        current_player.action_space = current_player.get_action_space(
+            situation=Action.ROBBER
+        )
+        action, attributes = current_player.pick_action()
+        logging.debug(f"Robber Action: {action}, Attributes: {attributes}")
+        current_player.perform_action(action, attributes, remove_resources=False)
 
 
 def softmax(x):
@@ -395,14 +381,14 @@ class CatanAITraining:
     # Model_base
     # Hyperparameters
 
-    H = 2048  # number of hidden layer 1 neurons
-    W = 1024  # number of hidden layer 2 neurons
-    batch_size = 10  # every how many episodes to do a param update?
-    episodes = 1000
+    H = 256  # number of hidden layer 1 neurons
+    W = 512  # number of hidden layer 2 neurons
+    batch_size = 20  # every how many episodes to do a param update?
+    episodes = 5000
     learning_rate = 1e-5
     gamma = 0.99  # discount factor for reward
-    decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
-    max_turn = 350
+    decay_rate = 0.999  # decay factor for RMSProp leaky sum of grad^2
+    max_turn = 300
     player_type = [PlayerType.MODEL, PlayerType.MODEL]  # model | random
     player_count = 2  # 1 - 4
     # Stacking
@@ -416,8 +402,8 @@ class CatanAITraining:
         # "win_50": {"win": 50, "loss": 0},
         # "win_50_loss_10": {"win": 50, "loss": -10},
         # "win_100": {"win": 100, "loss": 0},
-        "test": {"win": 100, "loss": -50},
-        # "win_100_loss_100": {"win": 100, "loss": -100},
+        "test3": {"win": 100, "loss": -50},
+        # "win_100_loss_100_big": {"win": 100, "loss": -100},
     }
 
     def __init__(self):
@@ -504,8 +490,8 @@ class CatanAITraining:
     def play_game_existing_model(self, model_path):
         logging.basicConfig(
             format="%(message)s",
-            level=logging.DEBUG,
-            filename="running.txt",
+            level=logging.INFO,
+            filename="running_2.txt",
             filemode="w",
             force=True,
         )
@@ -574,7 +560,7 @@ class CatanAITraining:
                         player.player_posturn_debug()
 
                 logging.info("End board state:")
-                self.catan.print_board(debug=False)
+                self.catan.print_board()
 
                 # Episode Audit
                 max_points = max(
@@ -586,7 +572,7 @@ class CatanAITraining:
 
                     player.player_episode_audit()
 
-                logging.info(
+                logging.debug(
                     f"Game finished in {self.catan.turn} turns. Winner: {self.catan.winner}"
                 )
                 self.turn_list.append(self.catan.turn)

@@ -16,6 +16,7 @@ pyautogui = "^0.9.54"
 ruff = "^0.3.7"
 pytest = "^8.2.0"
 ipykernel = "^6.29.5"
+python-dotenv = "^1.0.1"
 
 [tool.poetry.dev-dependencies]
 
