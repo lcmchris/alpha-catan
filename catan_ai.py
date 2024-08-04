@@ -128,8 +128,7 @@ class PlayerAI(Player):
             )
             dev_cards_arr = np.append(dev_cards_arr, [sum(player.dev_cards.values())])
 
-        board = self.catan.board.ravel().astype(np.float64)
-        board_uniques = np.unique(board)
+        board = self.catan.board.ravel().astype(np.int8)
         board = np.delete(board, np.where(board == 0))  # crop
         board = self.one_hot_encoder_board(board)
 
@@ -139,9 +138,14 @@ class PlayerAI(Player):
         return concentated_arr
 
     def one_hot_encoder_board(self, board: np.ndarray):
-        board = np.append(board, np.array([self.catan.player_tags]))
+        assert set(board).issubset(set(self.catan.unique_tags))
+        board = np.append(board, self.catan.unique_tags)  # board + all unique tags
+
         unique, inverse = np.unique(board, return_inverse=True)
+
         onehot = np.eye(unique.shape[0])[inverse]
+        onehot = onehot[: len(onehot) - len(self.catan.unique_tags)]
+
         return onehot
 
     def pick_action(self):
@@ -237,8 +241,8 @@ class CatanAI(Catan):
         self.mode = mode
         self.catan_training: CatanAITraining = catan_training
 
-        self.players: OrderedDict[str, PlayerAI]
         super().__init__()
+        self.players: OrderedDict[str, PlayerAI]
 
     def generate_players(
         self,
@@ -253,6 +257,62 @@ class CatanAI(Catan):
             )
             players[i - 9] = player
         return players
+
+    def generate_board(self):
+        resource_list = [
+            resource.value
+            for resource, count in self.resource_tokens.items()
+            for x in range(count)
+        ]
+        random.Random(self.seed).shuffle(resource_list)
+
+        number_list = [
+            key + 10 for key, value in self.number_tokens.items() for x in range(value)
+        ]
+        random.Random(self.seed + 1).shuffle(number_list)
+
+        """
+        Grid of 5 hexagons CENTER = resource number, CENTER+1 = resource type
+        21 x 23
+
+        """
+        # fmt: off
+        arr = self.empty_board
+
+        # Shuffle based on seed, off by one
+
+        for y, x in self.center_coords:
+            resource = resource_list.pop()
+
+            if resource == 6:
+                number = 1 # this is for desert as a dummy holder
+            else:
+                number =number_list.pop()
+            
+            
+            arr[y - 1, x] = resource
+            arr[y + 1, x] = number
+
+            if resource == 6:
+                arr[y, x] = self.robber_tag  # robber reference
+            else:
+                arr[y, x] = self.dummy_robber_tag
+
+        harbor_tokens_list = [harbor.tag for harbor, count in self.harbor_tokens.items() for i in range(count) ]
+        random.Random(self.seed+2).shuffle(harbor_tokens_list)
+
+        for y,x in self.harbor_coords:
+            harbor_tag = harbor_tokens_list.pop()
+            arr[y,x] = harbor_tag
+
+
+        # Generate coords of ownership
+        self.harbor_ownership = {
+            (harbor[0] + pos[0], harbor[1] + pos[1]): arr[harbor]
+            for harbor, positions in self.harbor_coords.items()
+            for pos in positions
+        }
+        return arr
 
     def game_start(self):
         # Clockwise order
@@ -338,7 +398,7 @@ class CatanAITraining:
     H = 2048  # number of hidden layer 1 neurons
     W = 1024  # number of hidden layer 2 neurons
     batch_size = 10  # every how many episodes to do a param update?
-    episodes = 100000
+    episodes = 1000
     learning_rate = 1e-5
     gamma = 0.99  # discount factor for reward
     decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
@@ -356,7 +416,7 @@ class CatanAITraining:
         # "win_50": {"win": 50, "loss": 0},
         # "win_50_loss_10": {"win": 50, "loss": -10},
         # "win_100": {"win": 100, "loss": 0},
-        "win_100_loss_50_100kep": {"win": 100, "loss": -50},
+        "test": {"win": 100, "loss": -50},
         # "win_100_loss_100": {"win": 100, "loss": -100},
     }
 
@@ -598,7 +658,7 @@ class CatanAITraining:
 
 if __name__ == "__main__":
     #
-    # CatanAITraining().training()
-    CatanAITraining().play_game_existing_model(
-        "models/win_100_loss_50_100kep/catan_model.pickle"
-    )
+    CatanAITraining().training()
+    # CatanAITraining().play_game_existing_model(
+    #     "models/win_100_loss_50_100kep/catan_model.pickle"
+    # )

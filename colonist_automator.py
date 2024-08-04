@@ -3,7 +3,7 @@ from playwright.sync_api import sync_playwright, Locator
 import pathlib
 import cv2 as cv2
 import numpy as np
-from catan_game import Catan, Player
+from catan_game import Catan, HARBOR, Player, Resource, Action
 from catan_ai import CatanAITraining, PlayerAI, PlayerType, policy_forward
 import pickle
 from catan_ai import relu, softmax
@@ -19,7 +19,6 @@ class ColonistIOAutomator(Catan):
 
     def __init__(self, model_path: str) -> None:
         super().__init__()
-
         self.selection_spacing = 45
         self.starting_coords = [80, 80]
         self.x_spacing = 50
@@ -32,15 +31,24 @@ class ColonistIOAutomator(Catan):
         self.tile_count = 2  # 2 tiles per number
         self.box_size = (45, 85)
         # fmt: off
-        self.box_coords = {
+        self.box_pxl_coords = {
             ( 90,210): (5, 8),( 90,310): (5, 12),(90,410): (5, 16),
             ( 180,160): (9, 6),( 180,260): (9, 10),( 180,360): (9, 14),( 180,460): (9, 18),
             ( 270,110): (13, 4),(270,210): (13, 8),( 270,310): (13, 12),( 270,410): (13, 16),(270,510): (13, 20),
             ( 360,160): (17, 6),(360,260): (17, 10),( 360,360): (17, 14),( 360,460): (17, 18),
-            ( 470,210): (21, 8),( 470,310): (21, 12),(470,410): (21, 16)
+            ( 470,210): (21, 8),( 470,310): (21, 12),(470,410): (21, 16),
             }
-
-
+        self.box_coords_pxl={value:key for key, value in self.box_pxl_coords}
+        self.confirm_action_pxl = (640,345)
+        self.harbor_coords_pxl = {
+            # clockwise from top left
+            (30,175):(2,6), (30,380):(2,14),
+            (120,530):(6,20),(295,635):(13,23),
+            (470,533):(20,20), 
+            (560,380):(24,14), (560,175):(24,6),
+            (385,73):(17,3),(305,73):(9,3)
+        }
+        # fmt: on
         self.n_action = 0
         self.pr = sync_playwright().start()
         self.page = self.create_page()
@@ -49,8 +57,10 @@ class ColonistIOAutomator(Catan):
         self.canvas_img: cv2.typing.MatLike
 
         self.take_canvas_img()
+        self.canvas.click()
         self.set_board_numbers_ocr()
         self.set_board_tiles_ocr()
+        self.set_harbor_ocr()
 
         self.player_automator: PlayerAutomator = self.players[-9]
         self.player_automator.embargo_opponent()
@@ -62,6 +72,9 @@ class ColonistIOAutomator(Catan):
         )
         self.road_pxl_to_coords, self.road_coords_to_pxl = (
             self.generate_road_pxl_mapping()
+        )
+        self.robber_pxl_to_coords, self.robber_coords_to_pxl = (
+            self.generate_robber_mapping()
         )
 
         self.last_messages = self.page.query_selector_all(".message-post")
@@ -118,8 +131,28 @@ class ColonistIOAutomator(Catan):
             road_coords_to_pxl[(spt_y, spt_x)] = (y_pxl, x_pxl)
         return road_pxl_to_coords, road_coords_to_pxl
 
+    def generate_robber_mapping(self):
+        robber_pxl_to_coords = {}
+        robber_coords_to_pxl = {}
+
+        for spt_y, spt_x in self.center_coords:
+            nomarlised_y = (spt_y - 5) / 2
+            nomarlised_x = (spt_x - 5) / 2
+            y_pxl = (
+                nomarlised_y // 2 * (self.y_2_spacing + self.y_1_spacing)
+                + (0 if nomarlised_y % 2 == 0 else self.y_1_spacing)
+                + self.starting_coords[0]
+            )
+            x_pxl = nomarlised_x * (self.x_spacing) + self.starting_coords[1]
+            robber_coords_to_pxl[(y_pxl, x_pxl)] = (spt_y, spt_x)
+            robber_pxl_to_coords[(spt_y, spt_x)] = (y_pxl, x_pxl)
+
+        return robber_pxl_to_coords, robber_coords_to_pxl
+
     def create_page(self):
-        browser = self.pr.chromium.launch(headless=False)
+        browser = self.pr.webkit.launch(
+            headless=False,
+        )
         context = browser.new_context()
         return context.new_page()
 
@@ -333,6 +366,52 @@ class ColonistIOAutomator(Catan):
 
         raise KeyError
 
+    def generate_board(self) -> np.ndarray:
+        return self.empty_board
+
+    def ocr(
+        self,
+        canvas_img: cv2.typing.MatLike,
+        template: cv2.typing.MatLike,
+        mapping: dict,
+    ):
+        h, w = template.shape[:2]
+        res = cv2.matchTemplate(canvas_img, template, self.match_method)
+        _, max_val, _, max_loc = cv2.minMaxLoc(res)
+        assert max_val > 0.95
+        canvas_img[
+            max_loc[1] - 1 : max_loc[1] + h + 1,
+            max_loc[0] - 1 : max_loc[0] + w + 1,
+        ] = 0
+
+        loc_yx = (max_loc[1], max_loc[0])
+        coord = self.match_coords(
+            self.get_center(loc_yx, h, w),
+            mapping=mapping,
+            size=self.box_size,
+        )
+
+        assert coord is not None
+        return coord, canvas_img
+
+    def set_harbor_ocr(self):
+        canvas_img = self.canvas_img.copy()
+
+        for harbor, harbor_count in self.harbor_tokens.items():
+            template = cv2.imread(
+                f"image-matching/harbor_{harbor.name.lower()}.png", cv2.IMREAD_COLOR
+            )
+
+            for _ in range(harbor_count):
+                coord, canvas_img = self.ocr(
+                    canvas_img=canvas_img,
+                    template=template,
+                    mapping=self.harbor_coords_pxl,
+                )
+                assert coord in self.harbor_coords
+                (y, x) = coord
+                self.board[y, x] = harbor.tag
+
     def set_board_numbers_ocr(self):
         canvas_img = self.canvas_img.copy()
 
@@ -343,35 +422,13 @@ class ColonistIOAutomator(Catan):
             h, w = template.shape[:2]
 
             for count in range(tile_count):
-                res = cv2.matchTemplate(canvas_img, template, self.match_method)
-                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-
-                canvas_img[
-                    max_loc[1] - 1 : max_loc[1] + h + 1,
-                    max_loc[0] - 1 : max_loc[0] + w + 1,
-                ] = 0
-
-                for attempt in range(3):
-                    try:
-                        loc_yx = (max_loc[1], max_loc[0])
-                        coord = self.match_coords(
-                            self.get_center(loc_yx, h, w),
-                            mapping=self.box_coords,
-                            size=self.box_size,
-                        )
-                    except KeyError:
-                        self.page.wait_for_timeout(3000)
-                        self.take_canvas_img()
-                    else:
-                        break
-
-                if coord is None:
-                    raise Exception("No match found")
-
-                else:
-                    (y, x) = coord
-
+                coord, canvas_img = self.ocr(
+                    canvas_img=canvas_img,
+                    template=template,
+                    mapping=self.box_pxl_coords,
+                )
                 assert coord in self.center_coords
+                (y, x) = coord
                 self.board[y + 1, x] = tile + 10
 
     def set_board_tiles_ocr(self):
@@ -384,32 +441,45 @@ class ColonistIOAutomator(Catan):
             h, w = template.shape[:2]
 
             for count in range(tile_count):
-                res = cv2.matchTemplate(canvas_img, template, self.match_method)
-                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-                canvas_img[
-                    max_loc[1] - 1 : max_loc[1] + h + 1,
-                    max_loc[0] - 1 : max_loc[0] + w + 1,
-                ] = 0
-                loc_yx = (max_loc[1], max_loc[0])
-                coord = self.match_coords(
-                    self.get_center(loc_yx, h, w),
-                    mapping=self.box_coords,
-                    size=self.box_size,
+                coord, canvas_img = self.ocr(
+                    canvas_img=canvas_img,
+                    template=template,
+                    mapping=self.box_pxl_coords,
                 )
+
                 (y, x) = coord
                 assert coord in self.center_coords
                 self.board[y - 1, x] = tile.value
+                if tile == Resource.DESERT:
+                    self.board[y, x] = self.robber_tag
+                else:
+                    self.board[y, x] = self.dummy_robber_tag
 
     def loop_templates_ocr(
         self,
     ) -> list[int, int]:
         """Get the coordinates of the current board"""
+        img = self.canvas_img.copy()
+        self.update_robber_coords(img)
+        self.update_player_settlements(img)
 
-        ## Red
+    def update_robber_coords(self, img):
+        self.reset_robber_spots()
+        robber_template = cv2.imread(
+            f"image-matching/robber.png",
+            cv2.IMREAD_COLOR,
+        )
+        self.update_board_ocr(
+            img=img,
+            template=robber_template,
+            tag=self.robber_tag,
+            mapping=self.robber_pxl_to_coords,
+        )
+
+    def update_player_settlements(self, img):
         for player in ["red", "blue"]:
             for match_type in ["city", "settlement", "road"]:
-                img = self.canvas_img.copy()
-                if player == "red":
+                if player == "red":  # needs to be figured out but
                     player_tag = -9
                 elif player == "blue":
                     player_tag = -8
@@ -434,7 +504,7 @@ class ColonistIOAutomator(Catan):
                     self.update_board_ocr(
                         img=img,
                         template=template,
-                        player_tag=player_tag,
+                        tag=player_tag,
                         mapping=mapping,
                     )
 
@@ -442,7 +512,7 @@ class ColonistIOAutomator(Catan):
         self,
         img: cv2.typing.MatLike,
         template: cv2.typing.MatLike,
-        player_tag: int,
+        tag: int,
         mapping: dict,
     ) -> list[int, int]:
         h, w = template.shape[:2]
@@ -453,11 +523,11 @@ class ColonistIOAutomator(Catan):
                 break
             loc_yx = (max_loc[1], max_loc[0])
 
-            logging.info(f"Found match {template} at {loc_yx} , player {player_tag}")
+            logging.info(f"Found match {template} at {loc_yx} , player {tag}")
 
             coord = self.match_coords(self.get_center(loc_yx, h, w), mapping=mapping)
             (y, x) = coord
-            self.board[y, x] = player_tag
+            self.board[y, x] = tag
             img[
                 max_loc[1] - 15 : max_loc[1] + h + 15,
                 max_loc[0] - 15 : max_loc[0] + w + 15,
@@ -484,42 +554,43 @@ class PlayerAutomator(PlayerAI):
 
         return action, attributes
 
-    # def perform_action(self, action, attributes, situation=False):
-    #     if action == 0:
-    #         pass
-    #     elif action == 1:
-    #         self.build_road(attributes)
-    #     elif action == 2:
-    #         self.build_settlement(attributes)
-    #     elif action == 3:
-    #         self.build_city(attributes)
-    #     elif action == 4:
-    #         self.trade_with_bank(attributes)
-    #     elif action == 5:
-    #         self.discard_resources(attributes)
-    #     else:
-    #         raise ValueError("action not in action space")
+    def click_pxl(self, pxl: tuple[int, int]):
+        self.catan.canvas.click(position={"y": pxl[0], "x": pxl[1]})
 
     def click_buy(
         self,
         mapping: dict,
         coords: tuple,
     ):
-        self.catan.canvas.click(
-            position={
-                "y": mapping[coords][0],
-                "x": mapping[coords][1],
-            }
-        )
+        buy_pxl = mapping[coords]
+        self.click_pxl(pxl=buy_pxl)
         self.catan.page.wait_for_timeout(1000)
-        self.catan.canvas.click(
-            position={
-                "y": mapping[coords][0] - self.catan.selection_spacing,
-                "x": mapping[coords][1],
-            }
-        )
+
+        above_pxl = (buy_pxl[0] - self.catan.selection_spacing, buy_pxl[1])
+        self.click_pxl(pxl=above_pxl)
 
         self.catan.page.wait_for_timeout(1000)
+
+    def read_template(self, path: str):
+        return cv2.imread(
+            f"image-matching/{path}",
+            cv2.IMREAD_COLOR,
+        )
+
+    def click_template(self, template: cv2.typing.MatLike, count):
+        canvas_img = self.catan.canvas_img
+        h, w = template.shape[:2]
+        res = cv2.matchTemplate(canvas_img, template, self.catan.match_method)
+        _, max_val, _, max_loc = cv2.minMaxLoc(res)
+        assert max_val > 0.95
+        self.click_pxl(max_loc)
+
+    def build_road(self, coords: tuple):
+        if coords in self.catan.all_road_spots:
+            mapping = self.catan.road_coords_to_pxl
+            self.click_buy(mapping, coords)
+        else:
+            raise ValueError(f"Incorrect buying coords: {coords}")
 
     def build_settlement(
         self,
@@ -529,28 +600,111 @@ class PlayerAutomator(PlayerAI):
             raise ValueError(f"Incorrect buying coords: {coords}")
         mapping = self.catan.settlement_coords_to_pxl
         self.click_buy(mapping, coords)
-        self.settlements.append(coords)
 
-    def build_road(self, coords: tuple):
-        if coords in self.catan.all_road_spots:
-            mapping = self.catan.road_coords_to_pxl
-            self.click_buy(mapping, coords)
-        else:
-            raise ValueError(f"Incorrect buying coords: {coords}")
-
-        self.roads.append(coords)
+    def build_city(
+        self,
+        coords: tuple,
+    ):
+        self.build_settlement(coords)
 
     def embargo_opponent(self):
         opponent_icon_pxl = (560, 720)
-        self.catan.canvas.click(
-            position={
-                "y": opponent_icon_pxl[0],
-                "x": opponent_icon_pxl[1],
-            }
-        )
+        self.click_pxl(opponent_icon_pxl)
         self.catan.page.click("text=Embargo Player")
 
+    def trade_resources(self, resource_in_resource_out: tuple):
+        resource_in = Resource(resource_in_resource_out[0])
+        resource_out = Resource(resource_in_resource_out[1])
+        count = resource_in_resource_out[2]
 
+        logging.debug(f"Trading {resource_in} for {resource_out} at {count}")
+        pxl_trade_resource_dict = {
+            Resource.LUMBER: (480, 30),
+            Resource.BRICK: (480, 65),
+            Resource.WOOL: (480, 105),
+            Resource.GRAIN: (480, 140),
+            Resource.ORE: (480, 175),
+        }
+        trade_square_pxl = (695, 305)
+        self.click_pxl(trade_square_pxl)
+        template = cv2.imread(
+            f"image-matching/resource_card_{resource_in.name.lower()}.png",
+            cv2.IMREAD_COLOR,
+        )
+        for _ in range(count):
+            self.click_template(template)
+        self.click_pxl(pxl_trade_resource_dict[resource_out])
+
+    def discard_resources(self, attributes):
+        template = self.read_template(
+            f"resource_card_{Resource(attributes).name.lower()}.png"
+        )
+        self.click_template(template)
+
+    def place_robber(self, coords: tuple, remove_resources=False):
+        if remove_resources:
+            knight_template = self.read_template(
+                f"dev_card_{Action.KNIGHT.name.lower()}.png"
+            )
+            self.click_template(knight_template)
+            self.click_pxl(self.catan.confirm_action_pxl)
+
+        center_pxl = self.catan.box_coords_pxl[coords]
+        self.click_pxl(center_pxl)
+
+    def buy_dev_card(self) -> None:
+        dev_card_square = (695, 375)
+        self.click_pxl(dev_card_square)
+
+    def road_building_action(self, both_roads: frozenset[tuple]):
+        road_build_template = self.read_template(
+            f"dev_card_{Action.ROADBUILDING.name.lower()}.png"
+        )
+        self.click_template(road_build_template)
+        self.click_pxl(self.catan.confirm_action_pxl)
+        for road in both_roads:
+            self.build_road(coords=road, remove_resources=False)
+
+    def year_of_plenty_action(self, resources_pair: frozenset[Resource]) -> None:
+        yop_template = self.read_template(
+            f"dev_card_{Action.YEAROFPLENTY.name.lower()}.png"
+        )
+        self.click_template(yop_template)
+        self.click_pxl(self.catan.confirm_action_pxl)
+
+    def monopoly_action(self, resource: Resource):
+        monopoly_template = self.read_template(
+            f"dev_card_{Action.MONOPOLY.name.lower()}.png"
+        )
+        self.click_template(monopoly_template)
+        self.click_pxl(self.catan.confirm_action_pxl)
+
+
+# def perform_action(self, action: Action, attributes, remove_resources=True):
+#         if action == Action.PASS:
+#             pass
+#         elif action == Action.ROAD:
+#             self.build_road(attributes, remove_resources) x
+#         elif action == Action.SETTLEMENT:
+#             self.build_settlement(attributes, remove_resources) x
+#         elif action == Action.CITY:
+#             self.build_city(attributes) x
+#         elif action == Action.TRADE:
+#             self.trade_resources(attributes) x
+#         elif action == Action.DISCARD:
+#             self.discard_resources(attributes)x
+#         elif action == Action.ROBBER:
+#             self.place_robber(attributes, remove_resources=False)x
+#         elif action == Action.BUYDEVCARD:x
+#             self.buy_dev_card()
+#         elif action == Action.KNIGHT:x
+#             self.place_robber(attributes, remove_resources=True)
+#         elif action == Action.ROADBUILDING:x
+#             self.road_building_action(attributes) x
+#         elif action == Action.YEAROFPLENTY:
+#             self.year_of_plenty_action(attributes)
+#         elif action == Action.MONOPOLY:
+#             self.monopoly_action(attributes)
 if __name__ == "__main__":
     logging.basicConfig(
         format="%(message)s",
@@ -558,6 +712,4 @@ if __name__ == "__main__":
         filename="running.txt",
         filemode="w",
     )
-    colonistUI = ColonistIOAutomator(
-        model_path="models/win_100_loss_50_100kep/catan_model.pickle"
-    )
+    colonistUI = ColonistIOAutomator(model_path="models/test/catan_model.pickle")

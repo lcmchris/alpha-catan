@@ -493,10 +493,7 @@ class Player:
 
     def place_robber(self, coords: tuple, remove_resources=True):
         """Place robber at coords and steal resources from opponent"""
-        self.catan.board[self.catan.board == self.catan.robber_tag] = (
-            self.catan.dummy_robber_tag
-        )
-
+        self.catan.reset_robber_spots()
         self.catan.board[coords] = self.catan.robber_tag
         logging.debug(f"Placed robber at : {coords}")
         (y, x) = coords
@@ -703,7 +700,7 @@ class Catan:
         self.robber_tag = 50
         self.dummy_robber_tag = 52
 
-        self.max_points = 15
+        self.max_points = 10
         self.dev_card_count_static = {
             DevelopmentCard.KNIGHT: 14,
             DevelopmentCard.VP: 5,
@@ -778,15 +775,16 @@ class Catan:
             HARBOR.WOOL: 1,  # wool
         }
         self.harbor_coords = {
+            # clockwise from top left
             (2, 6): [(0, 2), (2, 0)],
             (2, 14): [(2, 0), (0, -2)],
             (6, 20): [(2, 0), (0, -2)],
-            (9, 3): [(-1, 1), (1, 1)],
             (13, 23): [(-1, -1), (1, -1)],
-            (17, 3): [(-1, 1), (1, 1)],
             (20, 20): [(-2, 0), (0, -2)],
-            (24, 6): [(-2, 0), (0, 2)],
             (24, 14): [(-2, 0), (0, -2)],
+            (24, 6): [(-2, 0), (0, 2)],
+            (17, 3): [(-1, 1), (1, 1)],
+            (9, 3): [(-1, 1), (1, 1)],
         }
         self.harbor_ownership: dict[tuple, int]
 
@@ -815,32 +813,32 @@ class Catan:
         [
         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,3,0,-1,0,0,0,-1,0,3,0,-1,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,-3,0,-1,0,0,0,-1,0,-3,0,-1,0,0,0,0,0,0,0,0],
         [0,0,0,0,0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0,0,0,0,0],
         [0,0,0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0,0,0],
         [0,0,0,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,0,0,0],
-        [0,0,0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,3,0,0,0,0],
+        [0,0,0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,-3,0,0,0,0],
         [0,0,0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0,0,0],
         [0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0],
-        [0,0,0,3,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,0],
+        [0,0,0,-3,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,0],
         [0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0],
         [0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0],
         [0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0],
-        [0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,3,0],
+        [0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,-3,0],
         [0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0],
         [0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0],
         [0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0],
-        [0,0,0,3,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,0],
+        [0,0,0,-3,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,0],
         [0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0],
         [0,0,0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0,0,0],
-        [0,0,0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,3,0,0,0,0],
+        [0,0,0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,-3,0,0,0,0],
         [0,0,0,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,-2,0,0,0,0,0,0],
         [0,0,0,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,-1,0,0,0,0,0,0],
         [0,0,0,0,0,0,0,-2,0,-2,0,-2,0,-2,0,-2,0,-2,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,3,0,-1,0,0,0,-1,0,3,0,-1,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,-3,0,-1,0,0,0,-1,0,-3,0,-1,0,0,0,0,0,0,0,0],
         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        ]
+        ],dtype=np.int8
     )
         # fmt: on
 
@@ -850,22 +848,54 @@ class Catan:
 
         self.all_road_spots = self.get_road_spots()
         self.all_settlement_spots = self.get_settment_spots()
-        self.base_action_space = self.generate_all_action_space()
 
         self.unique_tags = (
             [-2, -1]
             + self.player_tags
             + [harbor.tag for harbor in HARBOR]
-            + list(self.resource_tokens.keys())
+            + [resource.value for resource in self.resource_tokens.keys()]
             + [key + 10 for key in self.number_tokens.keys()]
             + [self.robber_tag, self.dummy_robber_tag]
         )
 
+        self.base_action_space = self.generate_all_action_space()
+
+    def generate_all_action_space(self) -> list[tuple[Action, list]]:
+        """
+        Generate all the potential actions.
+        """
+
+        action_space = {
+            Action.PASS: [None],  # nothing
+            Action.ROAD: self.get_road_spots(),  # road
+            Action.SETTLEMENT: self.get_settment_spots(),  # settlement
+            Action.CITY: self.get_settment_spots(),  # city
+            Action.TRADE: self.get_trades(),  # trade
+            Action.DISCARD: self.get_discards(),  # discards
+            Action.ROBBER: self.get_robber_spots(),  # robbers
+            Action.BUYDEVCARD: self.get_buy_dev_card(),
+            Action.KNIGHT: self.get_robber_spots(),
+            Action.ROADBUILDING: self.get_road_building(),
+            Action.YEAROFPLENTY: self.get_year_of_plenty(),
+            Action.MONOPOLY: self.get_monopoly(),
+            Action.KNIGHT: self.get_robber_spots(),
+        }
+        flatten_action_space = [
+            (action_index, potential_action)
+            for action_index, potential_actions in action_space.items()
+            for potential_action in potential_actions
+        ]
+
+        return flatten_action_space
+
     def get_settment_spots(self):
-        return arr_to_tuple(np.argwhere(self.board == -1))
+        return arr_to_tuple(np.argwhere(self.empty_board == -1))
 
     def get_road_spots(self):
-        return arr_to_tuple(np.argwhere(self.board == -2))
+        return arr_to_tuple(np.argwhere(self.empty_board == -2))
+
+    def get_harbor_spots(self):
+        return arr_to_tuple(np.argwhere(self.empty_board == -3))
 
     def get_trades(self):
         return (
@@ -915,35 +945,10 @@ class Catan:
     def get_monopoly(self):
         return self.resources_list
 
-    def generate_all_action_space(self) -> list[tuple[Action, list]]:
-        """
-        Generate all the potential actions.
-        """
-
-        action_space = {
-            Action.PASS: [None],  # nothing
-            Action.ROAD: self.get_road_spots(),  # road
-            Action.SETTLEMENT: self.get_settment_spots(),  # settlement
-            Action.CITY: self.get_settment_spots(),  # city
-            Action.TRADE: self.get_trades(),  # trade
-            Action.DISCARD: self.get_discards(),  # discards
-            Action.ROBBER: self.get_robber_spots(),  # robbers
-            Action.BUYDEVCARD: self.get_buy_dev_card(),
-            Action.KNIGHT: self.get_robber_spots(),
-            Action.ROADBUILDING: self.get_road_building(),
-            Action.YEAROFPLENTY: self.get_year_of_plenty(),
-            Action.MONOPOLY: self.get_monopoly(),
-            Action.KNIGHT: self.get_robber_spots(),
-        }
-        flatten_action_space = [
-            (action_index, potential_action)
-            for action_index, potential_actions in action_space.items()
-            for potential_action in potential_actions
-        ]
-
-        return flatten_action_space
-
     def generate_players(self, *args, **kwargs) -> dict[str, Player]:
+        pass
+
+    def generate_board(self) -> np.ndarray:
         pass
 
     def print_board(self, debug=True):
@@ -962,61 +967,8 @@ class Catan:
         board_string = board_string.replace(f"{zero_tmp}", "  ")
         logging.debug(board_string)
 
-    def generate_board(self):
-        resource_list = [
-            resource.value
-            for resource, count in self.resource_tokens.items()
-            for x in range(count)
-        ]
-        random.Random(self.seed).shuffle(resource_list)
-
-        number_list = [
-            key + 10 for key, value in self.number_tokens.items() for x in range(value)
-        ]
-        random.Random(self.seed + 1).shuffle(number_list)
-
-        """
-        Grid of 5 hexagons CENTER = resource number, CENTER+1 = resource type
-        21 x 23
-
-        """
-        # fmt: off
-        arr = self.empty_board
-
-        # Shuffle based on seed, off by one
-
-        for y, x in self.center_coords:
-            resource = resource_list.pop()
-
-            if resource == 6:
-                number = 0
-            else:
-                number =number_list.pop()
-            
-            
-            arr[y - 1, x] = resource
-            arr[y + 1, x] = number
-
-            if resource == 6:
-                arr[y, x] = self.robber_tag  # robber reference
-            else:
-                arr[y, x] = self.dummy_robber_tag
-
-        harbor_tokens_list = [harbor.tag for harbor, count in self.harbor_tokens.items() for i in range(count) ]
-        random.Random(self.seed+2).shuffle(harbor_tokens_list)
-
-        for y,x in self.harbor_coords:
-            harbor_tag = harbor_tokens_list.pop()
-            arr[y,x] = harbor_tag
-
-
-        # Generate coords of ownership
-        self.harbor_ownership = {
-            (harbor[0] + pos[0], harbor[1] + pos[1]): arr[harbor]
-            for harbor, positions in self.harbor_coords.items()
-            for pos in positions
-        }
-        return arr
+    def reset_robber_spots(self):
+        self.board[self.board == self.robber_tag] = self.dummy_robber_tag
 
     def deliver_resource(self, roll):
         # Deliver resources by the roll. Blocked resource if knight is in play.
