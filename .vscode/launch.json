@@ -5,15 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
-            "type": "python",
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true,
-            "autoReload": {
-                "enable": true
-              }
+            "env": {
+                // "PWDEBUG": "1",
+                // "DEBUG": "pw:api",
+                "PW_TEST_SCREENSHOT_NO_FONTS_READY": "1"
+            }
         }
     ]
 }

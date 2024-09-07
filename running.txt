@@ -1,0 +1,956 @@
+Using selector: EpollSelector
+Clicked on pxl (590, 760)
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 10)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (6, 10)), (<Action.SETTLEMENT: 2>, (6, 14)), (<Action.SETTLEMENT: 2>, (6, 18)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 8)), (<Action.SETTLEMENT: 2>, (8, 12)), (<Action.SETTLEMENT: 2>, (8, 16)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 16)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 8)), (<Action.SETTLEMENT: 2>, (18, 12)), (<Action.SETTLEMENT: 2>, (18, 16)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 10)), (<Action.SETTLEMENT: 2>, (20, 14)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 10)), (<Action.SETTLEMENT: 2>, (22, 14)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (8, 16)
+Clicked on pxl (209.0, 461.25)
+Clicked on pxl (164.0, 461.25)
+Action space list: 
+[(<Action.ROAD: 1>, (7, 15)), (<Action.ROAD: 1>, (9, 16)), (<Action.ROAD: 1>, (7, 17))]
+Buy road for (9, 16)
+Clicked on pxl (240.0, 461.25)
+Clicked on pxl (195.0, 461.25)
+Player -9 has 1 points
+Player -8 has 1 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 8)), (<Action.SETTLEMENT: 2>, (18, 12)), (<Action.SETTLEMENT: 2>, (18, 16)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 10)), (<Action.SETTLEMENT: 2>, (20, 14)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 10)), (<Action.SETTLEMENT: 2>, (22, 14)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (20, 14)
+Clicked on pxl (488.0, 407.5)
+Clicked on pxl (443.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (19, 13)), (<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 13)
+Clicked on pxl (472.5, 380.625)
+Clicked on pxl (427.5, 380.625)
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.WOOL for Resource.GRAIN at 4
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.TRADE: 4>, (<Resource.WOOL: 5>, <Resource.ORE: 3>, 4)), (<Action.TRADE: 4>, (<Resource.WOOL: 5>, <Resource.BRICK: 1>, 4)), (<Action.TRADE: 4>, (<Resource.WOOL: 5>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.WOOL: 5>, <Resource.LUMBER: 2>, 4))]
+Action: Action.TRADE, Attributes: (<Resource.WOOL: 5>, <Resource.GRAIN: 4>, 4)
+Trading Resource.WOOL for Resource.GRAIN at 4
+Clicked on pxl (695, 305)
+Clicked on pxl (700.0, 114.0)
+Clicked on pxl (700.0, 105.0)
+Clicked on pxl (700.0, 97.0)
+Clicked on pxl (700.0, 88.0)
+Clicked on pxl (480, 140)
+Clicked on pxl (550, 300)
+Clicked on pxl (695, 305)
+Trading Resource.WOOL for Resource.GRAIN at 4
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.BUYDEVCARD: 7>, None)]
+Action: Action.BUYDEVCARD, Attributes: None
+Clicked on pxl (695, 375)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.YEAROFPLENTY: 10>, frozenset({<Resource.BRICK: 1>, <Resource.LUMBER: 2>})), (<Action.YEAROFPLENTY: 10>, frozenset({<Resource.BRICK: 1>, <Resource.ORE: 3>})), (<Action.YEAROFPLENTY: 10>, frozenset({<Resource.BRICK: 1>, <Resource.GRAIN: 4>})), (<Action.YEAROFPLENTY: 10>, frozenset({<Resource.BRICK: 1>, <Resource.WOOL: 5>})), (<Action.YEAROFPLENTY: 10>, frozenset({<Resource.LUMBER: 2>, <Resource.ORE: 3>})), (<Action.YEAROFPLENTY: 10>, frozenset({<Resource.LUMBER: 2>, <Resource.GRAIN: 4>})), (<Action.YEAROFPLENTY: 10>, frozenset({<Resource.LUMBER: 2>, <Resource.WOOL: 5>})), (<Action.YEAROFPLENTY: 10>, frozenset({<Resource.ORE: 3>, <Resource.GRAIN: 4>})), (<Action.YEAROFPLENTY: 10>, frozenset({<Resource.ORE: 3>, <Resource.WOOL: 5>})), (<Action.YEAROFPLENTY: 10>, frozenset({<Resource.GRAIN: 4>, <Resource.WOOL: 5>})), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.WOOL: 5>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.ORE: 3>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.LUMBER: 2>, 4))]
+Action: Action.YEAROFPLENTY, Attributes: frozenset({<Resource.LUMBER: 2>, <Resource.GRAIN: 4>})
+Clicked on pxl (698.5, 164.5)
+Clicked on pxl (573.5, 11.0)
+Clicked on pxl (572.5, 11.5)
+Clicked on pxl (640, 345)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.ROAD: 1>, (7, 17)), (<Action.ROAD: 1>, (17, 12)), (<Action.ROAD: 1>, (11, 15)), (<Action.ROAD: 1>, (7, 15)), (<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15)), (<Action.ROAD: 1>, (11, 17)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.WOOL: 5>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.ORE: 3>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.LUMBER: 2>, 4))]
+Action: Action.ROAD, Attributes: (11, 15)
+Buy road for (11, 15)
+Clicked on pxl (695, 450)
+Clicked on pxl (286.5, 434.375)
+Clicked on pxl (241.5, 434.375)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.ROAD: 1>, (13, 14)), (<Action.ROAD: 1>, (7, 17)), (<Action.ROAD: 1>, (11, 13)), (<Action.ROAD: 1>, (17, 12)), (<Action.ROAD: 1>, (7, 15)), (<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15)), (<Action.ROAD: 1>, (11, 17))]
+Action: Action.ROAD, Attributes: (11, 17)
+Buy road for (11, 17)
+Clicked on pxl (695, 450)
+Clicked on pxl (286.5, 488.125)
+Clicked on pxl (241.5, 488.125)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.WOOL for Resource.ORE at 4
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.ROBBER: 6>, (13, 4)), (<Action.ROBBER: 6>, (13, 8)), (<Action.ROBBER: 6>, (13, 12)), (<Action.ROBBER: 6>, (13, 16)), (<Action.ROBBER: 6>, (13, 20)), (<Action.ROBBER: 6>, (17, 6)), (<Action.ROBBER: 6>, (17, 18))]
+Robber Action: Action.ROBBER, Attributes: (13, 20)
+Clicked on pxl (303.0, 568.75)
+Clicked on pxl (258.0, 568.75)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.LUMBER: 2>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.WOOL: 5>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.BRICK: 1>, 4))]
+Action: Action.TRADE, Attributes: (<Resource.ORE: 3>, <Resource.GRAIN: 4>, 4)
+Trading Resource.ORE for Resource.GRAIN at 4
+Clicked on pxl (695, 305)
+Clicked on pxl (698.5, 115.0)
+Clicked on pxl (698.5, 106.0)
+Clicked on pxl (698.5, 97.0)
+Clicked on pxl (698.5, 88.0)
+Clicked on pxl (480, 140)
+Clicked on pxl (550, 300)
+Clicked on pxl (695, 305)
+Trading Resource.ORE for Resource.GRAIN at 4
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.ROBBER: 6>, (9, 6)), (<Action.ROBBER: 6>, (13, 4)), (<Action.ROBBER: 6>, (13, 8)), (<Action.ROBBER: 6>, (13, 12)), (<Action.ROBBER: 6>, (13, 16)), (<Action.ROBBER: 6>, (17, 6)), (<Action.ROBBER: 6>, (17, 18))]
+Robber Action: Action.ROBBER, Attributes: (13, 16)
+Clicked on pxl (303.0, 461.25)
+Clicked on pxl (258.0, 461.25)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.ROAD: 1>, (13, 14)), (<Action.ROAD: 1>, (7, 17)), (<Action.ROAD: 1>, (11, 13)), (<Action.ROAD: 1>, (11, 19)), (<Action.ROAD: 1>, (13, 18)), (<Action.ROAD: 1>, (7, 15)), (<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Action: Action.ROAD, Attributes: (7, 17)
+Buy road for (7, 17)
+Clicked on pxl (695, 450)
+Clicked on pxl (193.5, 488.125)
+Clicked on pxl (148.5, 488.125)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.BUYDEVCARD: 7>, None)]
+Action: Action.BUYDEVCARD, Attributes: None
+Clicked on pxl (695, 375)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.MONOPOLY: 11>, <Resource.BRICK: 1>), (<Action.MONOPOLY: 11>, <Resource.LUMBER: 2>), (<Action.MONOPOLY: 11>, <Resource.ORE: 3>), (<Action.MONOPOLY: 11>, <Resource.GRAIN: 4>), (<Action.MONOPOLY: 11>, <Resource.WOOL: 5>)]
+Action: Action.MONOPOLY, Attributes: Resource.GRAIN
+Clicked on pxl (699.0, 147.5)
+Clicked on pxl (572.5, 11.5)
+Clicked on pxl (640, 345)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.ROBBER: 6>, (9, 6)), (<Action.ROBBER: 6>, (13, 4)), (<Action.ROBBER: 6>, (13, 12)), (<Action.ROBBER: 6>, (13, 16)), (<Action.ROBBER: 6>, (13, 20)), (<Action.ROBBER: 6>, (17, 6)), (<Action.ROBBER: 6>, (17, 18))]
+Robber Action: Action.ROBBER, Attributes: (13, 20)
+Clicked on pxl (303.0, 568.75)
+Clicked on pxl (258.0, 568.75)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.WOOL: 5>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.ORE: 3>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.LUMBER: 2>, 4))]
+Action: Action.TRADE, Attributes: (<Resource.BRICK: 1>, <Resource.GRAIN: 4>, 4)
+Trading Resource.BRICK for Resource.GRAIN at 4
+Clicked on pxl (695, 305)
+Clicked on pxl (698.5, 57.0)
+Clicked on pxl (698.5, 48.0)
+Clicked on pxl (698.5, 39.0)
+Clicked on pxl (698.5, 31.0)
+Clicked on pxl (480, 140)
+Clicked on pxl (550, 300)
+Clicked on pxl (695, 305)
+Trading Resource.BRICK for Resource.GRAIN at 4
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.BUYDEVCARD: 7>, None)]
+Action: Action.BUYDEVCARD, Attributes: None
+Clicked on pxl (695, 375)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.KNIGHT: 8>, (9, 6)), (<Action.KNIGHT: 8>, (13, 4)), (<Action.KNIGHT: 8>, (13, 12)), (<Action.KNIGHT: 8>, (13, 16)), (<Action.KNIGHT: 8>, (13, 20)), (<Action.KNIGHT: 8>, (17, 6)), (<Action.KNIGHT: 8>, (17, 18))]
+Action: Action.KNIGHT, Attributes: (17, 6)
+Clicked on pxl (698.0, 90.0)
+Clicked on pxl (640, 345)
+Clicked on pxl (396.0, 192.5)
+Clicked on pxl (351.0, 192.5)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.ROBBER: 6>, (9, 6)), (<Action.ROBBER: 6>, (13, 4)), (<Action.ROBBER: 6>, (13, 12)), (<Action.ROBBER: 6>, (13, 16)), (<Action.ROBBER: 6>, (13, 20)), (<Action.ROBBER: 6>, (17, 6)), (<Action.ROBBER: 6>, (17, 18))]
+Robber Action: Action.ROBBER, Attributes: (13, 20)
+Clicked on pxl (303.0, 568.75)
+Clicked on pxl (258.0, 568.75)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.WOOL for Resource.ORE at 4
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 2 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.LUMBER: 2>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.WOOL: 5>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.BRICK: 1>, 4))]
+Action: Action.TRADE, Attributes: (<Resource.ORE: 3>, <Resource.GRAIN: 4>, 4)
+Trading Resource.ORE for Resource.GRAIN at 4
+Clicked on pxl (695, 305)
+Clicked on pxl (698.5, 146.0)
+Clicked on pxl (698.5, 137.0)
+Clicked on pxl (698.5, 128.0)
+Clicked on pxl (698.5, 119.0)
+Clicked on pxl (480, 140)
+Clicked on pxl (550, 300)
+Clicked on pxl (695, 305)
+Trading Resource.ORE for Resource.GRAIN at 4
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.WOOL for Resource.ORE at 4
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.ROBBER: 6>, (9, 6)), (<Action.ROBBER: 6>, (13, 4)), (<Action.ROBBER: 6>, (13, 12)), (<Action.ROBBER: 6>, (13, 16)), (<Action.ROBBER: 6>, (13, 20)), (<Action.ROBBER: 6>, (17, 6)), (<Action.ROBBER: 6>, (17, 18))]
+Robber Action: Action.ROBBER, Attributes: (13, 20)
+Clicked on pxl (303.0, 568.75)
+Clicked on pxl (258.0, 568.75)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.BUYDEVCARD: 7>, None)]
+Action: Action.BUYDEVCARD, Attributes: None
+Clicked on pxl (695, 375)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.KNIGHT: 8>, (9, 6)), (<Action.KNIGHT: 8>, (13, 4)), (<Action.KNIGHT: 8>, (13, 12)), (<Action.KNIGHT: 8>, (13, 16)), (<Action.KNIGHT: 8>, (13, 20)), (<Action.KNIGHT: 8>, (17, 6)), (<Action.KNIGHT: 8>, (17, 18))]
+Action: Action.KNIGHT, Attributes: (17, 6)
+Clicked on pxl (698.0, 169.0)
+Clicked on pxl (640, 345)
+Clicked on pxl (396.0, 192.5)
+Clicked on pxl (351.0, 192.5)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.ROAD: 1>, (11, 19)), (<Action.ROAD: 1>, (7, 19)), (<Action.ROAD: 1>, (13, 18)), (<Action.ROAD: 1>, (7, 15)), (<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15)), (<Action.ROAD: 1>, (5, 18))]
+Action: Action.ROAD, Attributes: (7, 15)
+Buy road for (7, 15)
+Clicked on pxl (695, 450)
+Clicked on pxl (193.5, 434.375)
+Clicked on pxl (148.5, 434.375)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.LUMBER: 2>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.WOOL: 5>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.BRICK: 1>, 4))]
+Action: Action.TRADE, Attributes: (<Resource.ORE: 3>, <Resource.GRAIN: 4>, 4)
+Trading Resource.ORE for Resource.GRAIN at 4
+Clicked on pxl (695, 305)
+Clicked on pxl (698.5, 154.0)
+Clicked on pxl (698.5, 146.0)
+Clicked on pxl (698.5, 137.0)
+Clicked on pxl (698.5, 128.0)
+Clicked on pxl (480, 140)
+Clicked on pxl (550, 300)
+Clicked on pxl (695, 305)
+Trading Resource.ORE for Resource.GRAIN at 4
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.WOOL for Resource.ORE at 4
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.GRAIN for Resource.LUMBER at 4
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.BUYDEVCARD: 7>, None)]
+Action: Action.BUYDEVCARD, Attributes: None
+Clicked on pxl (695, 375)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.ROBBER: 6>, (9, 6)), (<Action.ROBBER: 6>, (13, 4)), (<Action.ROBBER: 6>, (13, 8)), (<Action.ROBBER: 6>, (13, 12)), (<Action.ROBBER: 6>, (13, 16)), (<Action.ROBBER: 6>, (13, 20)), (<Action.ROBBER: 6>, (17, 18))]
+Robber Action: Action.ROBBER, Attributes: (13, 20)
+Clicked on pxl (303.0, 568.75)
+Clicked on pxl (258.0, 568.75)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.KNIGHT: 8>, (9, 6)), (<Action.KNIGHT: 8>, (13, 4)), (<Action.KNIGHT: 8>, (13, 8)), (<Action.KNIGHT: 8>, (13, 12)), (<Action.KNIGHT: 8>, (13, 16)), (<Action.KNIGHT: 8>, (13, 20)), (<Action.KNIGHT: 8>, (17, 18))]
+Action: Action.KNIGHT, Attributes: (13, 12)
+Clicked on pxl (698.0, 156.0)
+Clicked on pxl (640, 345)
+Clicked on pxl (303.0, 353.75)
+Clicked on pxl (258.0, 353.75)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.WOOL for Resource.BRICK at 4
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.TRADE: 4>, (<Resource.WOOL: 5>, <Resource.ORE: 3>, 4)), (<Action.TRADE: 4>, (<Resource.WOOL: 5>, <Resource.BRICK: 1>, 4)), (<Action.TRADE: 4>, (<Resource.WOOL: 5>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.WOOL: 5>, <Resource.LUMBER: 2>, 4))]
+Action: Action.TRADE, Attributes: (<Resource.WOOL: 5>, <Resource.GRAIN: 4>, 4)
+Trading Resource.WOOL for Resource.GRAIN at 4
+Clicked on pxl (695, 305)
+Clicked on pxl (700.0, 114.0)
+Clicked on pxl (700.0, 105.0)
+Clicked on pxl (700.0, 97.0)
+Clicked on pxl (700.0, 88.0)
+Clicked on pxl (480, 140)
+Clicked on pxl (550, 300)
+Clicked on pxl (695, 305)
+Trading Resource.WOOL for Resource.GRAIN at 4
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.WOOL for Resource.LUMBER at 4
+Trading Resource.BRICK for Resource.WOOL at 4
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.ROBBER: 6>, (9, 6)), (<Action.ROBBER: 6>, (13, 4)), (<Action.ROBBER: 6>, (13, 12)), (<Action.ROBBER: 6>, (13, 16)), (<Action.ROBBER: 6>, (13, 20)), (<Action.ROBBER: 6>, (17, 6)), (<Action.ROBBER: 6>, (17, 18))]
+Robber Action: Action.ROBBER, Attributes: (13, 20)
+Clicked on pxl (303.0, 568.75)
+Clicked on pxl (258.0, 568.75)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.LUMBER: 2>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.WOOL: 5>, 4)), (<Action.TRADE: 4>, (<Resource.ORE: 3>, <Resource.BRICK: 1>, 4))]
+Action: Action.TRADE, Attributes: (<Resource.ORE: 3>, <Resource.GRAIN: 4>, 4)
+Trading Resource.ORE for Resource.GRAIN at 4
+Clicked on pxl (695, 305)
+Clicked on pxl (698.5, 146.0)
+Clicked on pxl (698.5, 137.0)
+Clicked on pxl (698.5, 128.0)
+Clicked on pxl (698.5, 119.0)
+Clicked on pxl (480, 140)
+Clicked on pxl (550, 300)
+Clicked on pxl (695, 305)
+Trading Resource.ORE for Resource.GRAIN at 4
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.ROBBER: 6>, (9, 6)), (<Action.ROBBER: 6>, (13, 4)), (<Action.ROBBER: 6>, (13, 12)), (<Action.ROBBER: 6>, (13, 16)), (<Action.ROBBER: 6>, (13, 20)), (<Action.ROBBER: 6>, (17, 6)), (<Action.ROBBER: 6>, (17, 18))]
+Robber Action: Action.ROBBER, Attributes: (13, 20)
+Clicked on pxl (303.0, 568.75)
+Clicked on pxl (258.0, 568.75)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.GRAIN for Resource.BRICK at 4
+Player -9 has 2 points
+Player -8 has 1 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.WOOL: 5>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.ORE: 3>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.LUMBER: 2>, 4))]
+Action: Action.TRADE, Attributes: (<Resource.BRICK: 1>, <Resource.GRAIN: 4>, 4)
+Trading Resource.BRICK for Resource.GRAIN at 4
+Clicked on pxl (695, 305)
+Clicked on pxl (698.5, 57.0)
+Clicked on pxl (698.5, 48.0)
+Clicked on pxl (698.5, 39.0)
+Clicked on pxl (698.5, 31.0)
+Clicked on pxl (480, 140)
+Clicked on pxl (550, 300)
+Clicked on pxl (695, 305)
+Trading Resource.BRICK for Resource.GRAIN at 4
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.WOOL for Resource.ORE at 4
+Player -9 has 2 points
+Player -8 has 0 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 0 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 0 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.ROBBER: 6>, (9, 6)), (<Action.ROBBER: 6>, (13, 4)), (<Action.ROBBER: 6>, (13, 8)), (<Action.ROBBER: 6>, (13, 12)), (<Action.ROBBER: 6>, (13, 16)), (<Action.ROBBER: 6>, (17, 6)), (<Action.ROBBER: 6>, (17, 18))]
+Robber Action: Action.ROBBER, Attributes: (13, 16)
+Clicked on pxl (303.0, 461.25)
+Clicked on pxl (258.0, 461.25)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Player -9 has 2 points
+Player -8 has 0 points
+Clicked on pxl (570, 630)
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.CITY: 3>, (8, 16)), (<Action.CITY: 3>, (20, 14))]
+Action: Action.CITY, Attributes: (20, 14)
+Clicked on pxl (695, 595)
+Buy settlement for (20, 14)
+Buy settlement for (20, 14)
+Clicked on pxl (488.0, 407.5)
+Clicked on pxl (443.0, 407.5)
+Action space list: 
+[(<Action.PASS: 0>, None)]
+Action: Action.PASS, Attributes: None
+Trading Resource.WOOL for Resource.ORE at 4
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Clicked on pxl (427.5, 434.375)
+Player -9 has 3 points
+Player -8 has 0 points
+<-- Player -9 -->
+Action space list: 
+[(<Action.SETTLEMENT: 2>, (2, 8)), (<Action.SETTLEMENT: 2>, (2, 12)), (<Action.SETTLEMENT: 2>, (2, 16)), (<Action.SETTLEMENT: 2>, (4, 6)), (<Action.SETTLEMENT: 2>, (4, 14)), (<Action.SETTLEMENT: 2>, (4, 18)), (<Action.SETTLEMENT: 2>, (6, 6)), (<Action.SETTLEMENT: 2>, (8, 4)), (<Action.SETTLEMENT: 2>, (8, 20)), (<Action.SETTLEMENT: 2>, (10, 4)), (<Action.SETTLEMENT: 2>, (10, 8)), (<Action.SETTLEMENT: 2>, (10, 12)), (<Action.SETTLEMENT: 2>, (10, 20)), (<Action.SETTLEMENT: 2>, (12, 2)), (<Action.SETTLEMENT: 2>, (12, 6)), (<Action.SETTLEMENT: 2>, (12, 10)), (<Action.SETTLEMENT: 2>, (12, 14)), (<Action.SETTLEMENT: 2>, (12, 18)), (<Action.SETTLEMENT: 2>, (12, 22)), (<Action.SETTLEMENT: 2>, (14, 2)), (<Action.SETTLEMENT: 2>, (14, 6)), (<Action.SETTLEMENT: 2>, (14, 10)), (<Action.SETTLEMENT: 2>, (14, 14)), (<Action.SETTLEMENT: 2>, (14, 18)), (<Action.SETTLEMENT: 2>, (14, 22)), (<Action.SETTLEMENT: 2>, (16, 4)), (<Action.SETTLEMENT: 2>, (16, 8)), (<Action.SETTLEMENT: 2>, (16, 12)), (<Action.SETTLEMENT: 2>, (16, 16)), (<Action.SETTLEMENT: 2>, (16, 20)), (<Action.SETTLEMENT: 2>, (18, 4)), (<Action.SETTLEMENT: 2>, (18, 20)), (<Action.SETTLEMENT: 2>, (20, 6)), (<Action.SETTLEMENT: 2>, (20, 18)), (<Action.SETTLEMENT: 2>, (22, 6)), (<Action.SETTLEMENT: 2>, (22, 18)), (<Action.SETTLEMENT: 2>, (24, 8)), (<Action.SETTLEMENT: 2>, (24, 12)), (<Action.SETTLEMENT: 2>, (24, 16))]
+Buy settlement for (12, 14)
+Clicked on pxl (302.0, 407.5)
+Clicked on pxl (257.0, 407.5)
+Action space list: 
+[(<Action.ROAD: 1>, (21, 14)), (<Action.ROAD: 1>, (19, 15))]
+Buy road for (19, 15)
+Clicked on pxl (472.5, 434.375)
+Loaded backend tkagg version 8.6.
+Action space list: 
+[(<Action.PASS: 0>, None), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.WOOL: 5>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.ORE: 3>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.GRAIN: 4>, 4)), (<Action.TRADE: 4>, (<Resource.BRICK: 1>, <Resource.LUMBER: 2>, 4))]
