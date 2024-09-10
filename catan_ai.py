@@ -52,15 +52,8 @@ class PlayerAI(Player):
 
     def recalc_points(self):
         super().recalc_points()
-        if self.points >= self.catan.max_points:
-            self.r_s[-1] += self.reward_matrix("win") - self.catan.turn
 
-            # give other players a negative reward
-            for tag, player in self.catan.players.items():
-                if tag != self.tag:
-                    player.r_s[-1] += self.reward_matrix("loss")
-
-            logging.debug(f"Player {self.tag} wins!")
+        logging.debug(f"Player {self.tag} wins!")
 
     def discard_resources_turn(self):
         if sum(self.resources.values()) > 7:
@@ -385,9 +378,9 @@ class CatanAITraining:
     W = 256  # number of hidden layer 2 neurons
     batch_size = 100  # every how many episodes to do a param update?
     episodes = 100000
-    learning_rate = 1e-5
+    learning_rate = 1e-4
     gamma = 0.99  # discount factor for reward
-    decay_rate = 0.999  # decay factor for RMSProp leaky sum of grad^2
+    decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
     max_turn = 350
     player_type = [PlayerType.MODEL, PlayerType.MODEL]  # model | random
     player_count = 2  # 1 - 4
@@ -569,6 +562,8 @@ class CatanAITraining:
                 for player_tag, player in self.catan.players.items():
                     if self.catan.turn == self.max_turn and player.points != max_points:
                         player.r_s[-1] += player.reward_matrix("loss")
+                    else:
+                        player.r_s[-1] += player.reward_matrix("win") - self.catan.turn
 
                     player.player_episode_audit()
 
@@ -576,53 +571,52 @@ class CatanAITraining:
                     f"Game finished in {self.catan.turn} turns. Winner: {self.catan.winner}"
                 )
                 self.turn_list.append(self.catan.turn)
+
+                player = [player for player in self.catan.players.values()][0]
                 self.reward_list.append(player.reward_sum)
+                # stack together all inputs, hidden states, action gradients, and rewards for this episode
+                ep_x_s = np.vstack(player.x_s)
+                ep_z1_s = np.vstack(player.z1_s)
+                ep_a1_s = np.vstack(player.a1_s)
+                ep_z2_s = np.vstack(player.z2_s)
+                ep_a2_s = np.vstack(player.a2_s)
+                ep_z3_s = np.vstack(player.z3_s)
+                ep_a3_s = np.vstack(player.a3_s)
+                ep_y_s = np.vstack(player.y_s)
+                ep_r_s = np.vstack(player.r_s)
 
-                for player_tag, player in self.catan.players.items():
-                    if player.player_type == PlayerType.MODEL:
-                        # stack together all inputs, hidden states, action gradients, and rewards for this episode
-                        ep_x_s = np.vstack(player.x_s)
-                        ep_z1_s = np.vstack(player.z1_s)
-                        ep_a1_s = np.vstack(player.a1_s)
-                        ep_z2_s = np.vstack(player.z2_s)
-                        ep_a2_s = np.vstack(player.a2_s)
-                        ep_z3_s = np.vstack(player.z3_s)
-                        ep_a3_s = np.vstack(player.a3_s)
-                        ep_y_s = np.vstack(player.y_s)
-                        ep_r_s = np.vstack(player.r_s)
+                avg_ep_loss = (ep_a3_s - ep_y_s) / len(ep_y_s)
 
-                        avg_ep_loss = (ep_a3_s - ep_y_s) / len(ep_y_s)
+                grad = self.policy_backward(
+                    ep_x_s,
+                    ep_z1_s,
+                    ep_a1_s,
+                    ep_z2_s,
+                    ep_a2_s,
+                    ep_z3_s,
+                    ep_a3_s,
+                    ep_y_s,
+                    ep_r_s,
+                )
+                for k in self.model:
+                    self.grad_buffer[k] += grad[k]  # accumulate grad over batch
 
-                        grad = self.policy_backward(
-                            ep_x_s,
-                            ep_z1_s,
-                            ep_a1_s,
-                            ep_z2_s,
-                            ep_a2_s,
-                            ep_z3_s,
-                            ep_a3_s,
-                            ep_y_s,
-                            ep_r_s,
+                # perform rmsprop parameter update every batch_size episodes
+                if episode % self.batch_size == 0:
+                    for k, v in self.model.items():
+                        g = self.grad_buffer[k]  # gradient
+                        self.rmsprop_cache[k] = (
+                            self.decay_rate * self.rmsprop_cache[k]
+                            + (1 - self.decay_rate) * g**2
                         )
-                        for k in self.model:
-                            self.grad_buffer[k] += grad[k]  # accumulate grad over batch
-
-                        # perform rmsprop parameter update every batch_size episodes
-                        if episode % self.batch_size == 0:
-                            for k, v in self.model.items():
-                                g = self.grad_buffer[k]  # gradient
-                                self.rmsprop_cache[k] = (
-                                    self.decay_rate * self.rmsprop_cache[k]
-                                    + (1 - self.decay_rate) * g**2
-                                )
-                                self.model[k] -= (
-                                    self.learning_rate
-                                    * g
-                                    / (np.sqrt(self.rmsprop_cache[k]) + 1e-7)
-                                )
-                                self.grad_buffer[k] = np.zeros_like(
-                                    v
-                                )  # reset batch gradient buffer
+                        self.model[k] -= (
+                            self.learning_rate
+                            * g
+                            / (np.sqrt(self.rmsprop_cache[k]) + 1e-7)
+                        )
+                        self.grad_buffer[k] = np.zeros_like(
+                            v
+                        )  # reset batch gradient buffer
 
                 # save model
                 if episode % 100 == 0:

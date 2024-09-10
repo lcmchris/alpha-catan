@@ -97,6 +97,7 @@ class Player:
         self.is_longest_road = False
         self.largest_army = 0
         self.is_largest_army = False
+        self.winner = False
 
         self.actions_taken: list[Action] = []
         self.reward_sum = 0
