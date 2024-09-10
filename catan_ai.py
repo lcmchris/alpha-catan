@@ -53,7 +53,7 @@ class PlayerAI(Player):
     def recalc_points(self):
         super().recalc_points()
         if self.points >= self.catan.max_points:
-            self.r_s[-1] += self.reward_matrix("win")
+            self.r_s[-1] += self.reward_matrix("win") - self.catan.turn
 
             # give other players a negative reward
             for tag, player in self.catan.players.items():
@@ -382,13 +382,13 @@ class CatanAITraining:
     # Hyperparameters
 
     H = 256  # number of hidden layer 1 neurons
-    W = 512  # number of hidden layer 2 neurons
-    batch_size = 20  # every how many episodes to do a param update?
-    episodes = 5000
+    W = 256  # number of hidden layer 2 neurons
+    batch_size = 100  # every how many episodes to do a param update?
+    episodes = 100000
     learning_rate = 1e-5
     gamma = 0.99  # discount factor for reward
     decay_rate = 0.999  # decay factor for RMSProp leaky sum of grad^2
-    max_turn = 300
+    max_turn = 350
     player_type = [PlayerType.MODEL, PlayerType.MODEL]  # model | random
     player_count = 2  # 1 - 4
     # Stacking
@@ -402,7 +402,7 @@ class CatanAITraining:
         # "win_50": {"win": 50, "loss": 0},
         # "win_50_loss_10": {"win": 50, "loss": -10},
         # "win_100": {"win": 100, "loss": 0},
-        "test3": {"win": 100, "loss": -50},
+        "test3": {"win": 350, "loss": 0},
         # "win_100_loss_100_big": {"win": 100, "loss": -100},
     }
 
@@ -624,22 +624,27 @@ class CatanAITraining:
                                     v
                                 )  # reset batch gradient buffer
 
-            # save model
-            Path.open(f"models/{name}/catan_model.pickle", "wb")
-            pickle.dump(
-                self.model, Path.open(f"models/{name}/catan_model.pickle", "wb")
-            )
-            pickle.dump(
-                self.turn_list, Path.open(f"models/{name}/turn_list.pickle", "wb")
-            )
-            pickle.dump(
-                self.reward_list, Path.open(f"models/{name}/reward_list.pickle", "wb")
-            )
+                # save model
+                if episode % 100 == 0:
+                    Path.open(f"models/{name}/catan_model.pickle", "wb")
+                    pickle.dump(
+                        self.model, Path.open(f"models/{name}/catan_model.pickle", "wb")
+                    )
+                    pickle.dump(
+                        self.turn_list,
+                        Path.open(f"models/{name}/turn_list.pickle", "wb"),
+                    )
+                    pickle.dump(
+                        self.reward_list,
+                        Path.open(f"models/{name}/reward_list.pickle", "wb"),
+                    )
 
-            self.plot_running_avg(self.turn_list, Path(f"models/{name}/turn_list.jpg"))
-            self.plot_running_avg(
-                self.reward_list, Path(f"models/{name}/reward_list.jpg")
-            )
+                    self.plot_running_avg(
+                        self.turn_list, Path(f"models/{name}/turn_list.jpg")
+                    )
+                    self.plot_running_avg(
+                        self.reward_list, Path(f"models/{name}/reward_list.jpg")
+                    )
 
 
 if __name__ == "__main__":

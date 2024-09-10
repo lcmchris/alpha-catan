@@ -17,6 +17,7 @@ ruff = "^0.3.7"
 pytest = "^8.2.0"
 ipykernel = "^6.29.5"
 python-dotenv = "^1.0.1"
+cupy-cuda12x = "^13.3.0"
 
 [tool.poetry.dev-dependencies]
 
