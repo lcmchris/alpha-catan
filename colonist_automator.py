@@ -298,6 +298,7 @@ class ColonistIOAutomator(Catan):
         if debug:
             for player in self.players.values():
                 player.player_posturn_debug()
+        self.page.wait_for_timeout(1000)
 
     def is_game_start(self):
         return self.n_action < 2
@@ -1046,6 +1047,4 @@ if __name__ == "__main__":
         filename="running.txt",
         filemode="w",
     )
-    colonistUI = ColonistIOAutomator(
-        model_path="models/win_100_loss_100_big/catan_model.pickle"
-    )
+    colonistUI = ColonistIOAutomator(model_path="models/test3/catan_model.pickle")

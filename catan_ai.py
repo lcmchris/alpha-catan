@@ -207,7 +207,7 @@ class PlayerAI(Player):
 class CatanAI(Catan):
     def __init__(
         self,
-        seed,
+        seed: int,
         player_count: int,
         player_type: list[PlayerType],
         player_matrices: list[dict],
@@ -221,7 +221,7 @@ class CatanAI(Catan):
         self.mode = mode
         self.catan_training: CatanAITraining = catan_training
 
-        super().__init__()
+        super().__init__(seed=seed)
         self.players: OrderedDict[str, PlayerAI]
 
     def generate_players(
@@ -376,11 +376,11 @@ class CatanAITraining:
 
     H = 256  # number of hidden layer 1 neurons
     W = 256  # number of hidden layer 2 neurons
-    batch_size = 100  # every how many episodes to do a param update?
+    batch_size = 10  # every how many episodes to do a param update?
     episodes = 100000
     learning_rate = 1e-4
-    gamma = 0.99  # discount factor for reward
-    decay_rate = 0.99  # decay factor for RMSProp leaky sum of grad^2
+    gamma = 0.95  # discount factor for reward
+    decay_rate = 0.95  # decay factor for RMSProp leaky sum of grad^2
     max_turn = 350
     player_type = [PlayerType.MODEL, PlayerType.MODEL]  # model | random
     player_count = 2  # 1 - 4
@@ -395,13 +395,13 @@ class CatanAITraining:
         # "win_50": {"win": 50, "loss": 0},
         # "win_50_loss_10": {"win": 50, "loss": -10},
         # "win_100": {"win": 100, "loss": 0},
-        "test3": {"win": 350, "loss": 0},
+        "test4": {"win": 350, "loss": 0},
         # "win_100_loss_100_big": {"win": 100, "loss": -100},
     }
 
     def __init__(self):
         # create dummy catan game to get action spaces
-        catan = CatanAI(
+        self.catan = CatanAI(
             seed=1,
             player_type=self.player_type,
             player_matrices=[{"win": 10, "loss": 0}, {"win": 10, "loss": 0}],
@@ -409,10 +409,10 @@ class CatanAITraining:
             mode="multi",
             catan_training=self,
         )
-        catan.board = catan.generate_board()
+        self.catan.board = self.catan.generate_board()
 
         self.D = len(
-            catan.players[-9].prepro()
+            self.catan.players[-9].prepro()
         )  # sum([len(player.prepro()) for key, player in catan.players.items()])
         # D = 23 * 21  # input dimensionality: 23 x 21 grid (483)
         self.model = {}
@@ -420,7 +420,7 @@ class CatanAITraining:
             self.D
         )  # "Xavier" initialization. Dim = H x 483
 
-        self.types_of_actions = len(catan.generate_all_action_space())
+        self.types_of_actions = len(self.catan.generate_all_action_space())
         self.model["W2"] = np.random.randn(self.W, self.H) / np.sqrt(
             self.H
         )  # Dim = As x Ne
@@ -429,11 +429,17 @@ class CatanAITraining:
             self.W
         )  # Dim = As x Ne
 
+        self.winning_count = {player_tag: 0 for player_tag in self.catan.players}
+
         self.grad_buffer = {
-            k: np.zeros_like(v) for k, v in self.model.items()
+            (player_tag, k): np.zeros_like(v)
+            for k, v in self.model.items()
+            for player_tag in self.catan.players
         }  # update buffers that add up gradients over a batch
         self.rmsprop_cache = {
-            k: np.zeros_like(v) for k, v in self.model.items()
+            (player_tag, k): np.zeros_like(v)
+            for k, v in self.model.items()
+            for player_tag in self.catan.players
         }  # rmsprop memory
 
     def discount_rewards(self, r):
@@ -537,6 +543,7 @@ class CatanAITraining:
                     mode="multi",
                     catan_training=self,
                 )
+                self.catan.generate_board()
 
                 self.catan.game_start()
 
@@ -562,8 +569,10 @@ class CatanAITraining:
                 for player_tag, player in self.catan.players.items():
                     if self.catan.turn == self.max_turn and player.points != max_points:
                         player.r_s[-1] += player.reward_matrix("loss")
+                        player.winner = False
                     else:
                         player.r_s[-1] += player.reward_matrix("win") - self.catan.turn
+                        player.winner = True
 
                     player.player_episode_audit()
 
@@ -572,54 +581,65 @@ class CatanAITraining:
                 )
                 self.turn_list.append(self.catan.turn)
 
-                player = [player for player in self.catan.players.values()][0]
-                self.reward_list.append(player.reward_sum)
-                # stack together all inputs, hidden states, action gradients, and rewards for this episode
-                ep_x_s = np.vstack(player.x_s)
-                ep_z1_s = np.vstack(player.z1_s)
-                ep_a1_s = np.vstack(player.a1_s)
-                ep_z2_s = np.vstack(player.z2_s)
-                ep_a2_s = np.vstack(player.a2_s)
-                ep_z3_s = np.vstack(player.z3_s)
-                ep_a3_s = np.vstack(player.a3_s)
-                ep_y_s = np.vstack(player.y_s)
-                ep_r_s = np.vstack(player.r_s)
+                for player_tag, player in self.catan.players.items():
+                    self.reward_list.append(player.reward_sum)
+                    # stack together all inputs, hidden states, action gradients, and rewards for this episode
 
-                avg_ep_loss = (ep_a3_s - ep_y_s) / len(ep_y_s)
+                    ep_x_s = np.vstack(player.x_s)
+                    ep_z1_s = np.vstack(player.z1_s)
+                    ep_a1_s = np.vstack(player.a1_s)
+                    ep_z2_s = np.vstack(player.z2_s)
+                    ep_a2_s = np.vstack(player.a2_s)
+                    ep_z3_s = np.vstack(player.z3_s)
+                    ep_a3_s = np.vstack(player.a3_s)
+                    ep_y_s = np.vstack(player.y_s)
+                    ep_r_s = np.vstack(player.r_s)
 
-                grad = self.policy_backward(
-                    ep_x_s,
-                    ep_z1_s,
-                    ep_a1_s,
-                    ep_z2_s,
-                    ep_a2_s,
-                    ep_z3_s,
-                    ep_a3_s,
-                    ep_y_s,
-                    ep_r_s,
-                )
-                for k in self.model:
-                    self.grad_buffer[k] += grad[k]  # accumulate grad over batch
+                    avg_ep_loss = (ep_a3_s - ep_y_s) / len(ep_y_s)
 
+                    grad = self.policy_backward(
+                        ep_x_s,
+                        ep_z1_s,
+                        ep_a1_s,
+                        ep_z2_s,
+                        ep_a2_s,
+                        ep_z3_s,
+                        ep_a3_s,
+                        ep_y_s,
+                        ep_r_s,
+                    )
+
+                    for k in self.model:
+                        self.grad_buffer[(player_tag, k)] += grad[
+                            k
+                        ]  # accumulate grad over batch
+                    if player.winner:
+                        self.winning_count[player_tag] += 1
                 # perform rmsprop parameter update every batch_size episodes
-                if episode % self.batch_size == 0:
+                if episode != 0 and episode % self.batch_size == 0:
+                    last_count = 0
+                    for player, count in self.winning_count.items():
+                        if count > last_count:
+                            winner = player
+
                     for k, v in self.model.items():
-                        g = self.grad_buffer[k]  # gradient
-                        self.rmsprop_cache[k] = (
-                            self.decay_rate * self.rmsprop_cache[k]
+                        g = self.grad_buffer[(winner, k)]  # gradient
+                        self.rmsprop_cache[(winner, k)] = (
+                            self.decay_rate * self.rmsprop_cache[(winner, k)]
                             + (1 - self.decay_rate) * g**2
                         )
                         self.model[k] -= (
                             self.learning_rate
                             * g
-                            / (np.sqrt(self.rmsprop_cache[k]) + 1e-7)
+                            / (np.sqrt(self.rmsprop_cache[(winner, k)]) + 1e-7)
                         )
-                        self.grad_buffer[k] = np.zeros_like(
-                            v
-                        )  # reset batch gradient buffer
+                        for player in self.catan.players:
+                            self.grad_buffer[(player, k)] = np.zeros_like(
+                                v
+                            )  # reset batch gradient buffer
 
                 # save model
-                if episode % 100 == 0:
+                if episode % 100 == 0 and episode != 0:
                     Path.open(f"models/{name}/catan_model.pickle", "wb")
                     pickle.dump(
                         self.model, Path.open(f"models/{name}/catan_model.pickle", "wb")

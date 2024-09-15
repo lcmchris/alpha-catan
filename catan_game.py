@@ -744,8 +744,8 @@ class Player:
 
 
 class Catan:
-    def __init__(self) -> None:
-        self.seed = 0
+    def __init__(self, seed: int) -> None:
+        self.seed = seed
         self.robber_tag = 50
         self.dummy_robber_tag = 52
 
