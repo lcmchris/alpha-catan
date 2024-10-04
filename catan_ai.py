@@ -151,9 +151,16 @@ class PlayerAI(Player):
             self.z3_s.append(z3)
             self.a3_s.append(a3)
 
-            # choose a random action based on the action probabilities returned.
-            action_idx = np.random.choice(np.arange(a3.size), p=a3)
+            # # # Rebalance and make pass more possible. Pass is less likely as it is one option.
+            # # increase_prob = 4
+            # probs_a3 = a3.copy()
+            # # probs_a3[0] = probs_a3[0] * increase_prob
+            # # probs_a3 = probs_a3 / sum(probs_a3)
 
+            # # choose a random action based on the action probabilities returned.
+            # action_idx = np.random.choice(np.arange(a3.size), p=probs_a3)
+
+            action_idx = np.random.choice(np.arange(a3.size), p=a3)
             # Promote the action taken (which will be adjusted by the reward)
             y = np.zeros(len(self.catan.base_action_space))
             y[action_idx] = 1
@@ -347,7 +354,9 @@ def relu(x):
     return x
 
 
-def policy_forward(x, action_space, model):
+def policy_forward(
+    x, action_space, model
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     # forward pass: Take in board state, return probability of taking action [0,1,2,3]
     # Ne = Neurons in hidden state. As = Action Space
     z1 = model["W1"] @ x  # Ne x 483 * 483 x M = Ne x M
@@ -388,14 +397,14 @@ class CatanAITraining:
     running_reward = None
     turn_list = []
     reward_list = []
-
+    ep_loss = []
     reward_matrices = {
         # "win_10": {"win": 10, "loss": 0},
         # "win_10_loss_10": {"win": 10, "loss": -10},
         # "win_50": {"win": 50, "loss": 0},
         # "win_50_loss_10": {"win": 50, "loss": -10},
         # "win_100": {"win": 100, "loss": 0},
-        "test4": {"win": 350, "loss": 0},
+        "test4": {"win": 100, "loss": -100, "draw": -25},
         # "win_100_loss_100_big": {"win": 100, "loss": -100},
     }
 
@@ -404,7 +413,10 @@ class CatanAITraining:
         self.catan = CatanAI(
             seed=1,
             player_type=self.player_type,
-            player_matrices=[{"win": 10, "loss": 0}, {"win": 10, "loss": 0}],
+            player_matrices=[
+                {"win": 10, "loss": 0, "draw": 0},
+                {"win": 10, "loss": 0, "draw": 0},
+            ],
             player_count=self.player_count,
             mode="multi",
             catan_training=self,
@@ -441,6 +453,8 @@ class CatanAITraining:
             for k, v in self.model.items()
             for player_tag in self.catan.players
         }  # rmsprop memory
+
+        self.reward_list_player = {player_tag: [] for player_tag in self.catan.players}
 
     def discount_rewards(self, r):
         """take 1D float array of rewards and compute discounted reward"""
@@ -501,7 +515,10 @@ class CatanAITraining:
         self.catan = CatanAI(
             seed=1,
             player_type=self.player_type,
-            player_matrices=[{"win": 0, "loss": 0}, {"win": 0, "loss": 0}],
+            player_matrices=[
+                {"win": 0, "loss": 0, "draw": 0},
+                {"win": 0, "loss": 0, "draw": 0},
+            ],
             player_count=self.player_count,
             mode="multi",
             catan_training=self,
@@ -567,24 +584,28 @@ class CatanAITraining:
                     [player.points for player in self.catan.players.values()]
                 )
                 for player_tag, player in self.catan.players.items():
-                    if self.catan.turn == self.max_turn and player.points != max_points:
-                        player.r_s[-1] += player.reward_matrix("loss")
-                        player.winner = False
+                    if self.catan.turn != self.max_turn:
+                        if player.points != max_points:
+                            player.r_s[-1] += player.reward_matrix("loss")
+                            player.winner = False
+                        elif player.points == max_points:
+                            player.r_s[-1] += player.reward_matrix("win")
+                            player.winner = True
                     else:
-                        player.r_s[-1] += player.reward_matrix("win") - self.catan.turn
-                        player.winner = True
+                        player.r_s[-1] += player.reward_matrix("draw")
+                        player.winner = False
 
                     player.player_episode_audit()
 
-                logging.debug(
-                    f"Game finished in {self.catan.turn} turns. Winner: {self.catan.winner}"
+                logging.info(
+                    f"Game finished in {self.catan.turn} turns. Winner is : {self.catan.winner} \n"
                 )
                 self.turn_list.append(self.catan.turn)
 
                 for player_tag, player in self.catan.players.items():
-                    self.reward_list.append(player.reward_sum)
                     # stack together all inputs, hidden states, action gradients, and rewards for this episode
 
+                    self.reward_list_player[player_tag].append(player.reward_sum)
                     ep_x_s = np.vstack(player.x_s)
                     ep_z1_s = np.vstack(player.z1_s)
                     ep_a1_s = np.vstack(player.a1_s)
@@ -596,6 +617,7 @@ class CatanAITraining:
                     ep_r_s = np.vstack(player.r_s)
 
                     avg_ep_loss = (ep_a3_s - ep_y_s) / len(ep_y_s)
+                    self.ep_loss.append(avg_ep_loss.sum())
 
                     grad = self.policy_backward(
                         ep_x_s,
@@ -622,6 +644,9 @@ class CatanAITraining:
                         if count > last_count:
                             winner = player
 
+                    self.reward_list = (
+                        self.reward_list + self.reward_list_player[winner]
+                    )
                     for k, v in self.model.items():
                         g = self.grad_buffer[(winner, k)]  # gradient
                         self.rmsprop_cache[(winner, k)] = (
@@ -658,6 +683,9 @@ class CatanAITraining:
                     )
                     self.plot_running_avg(
                         self.reward_list, Path(f"models/{name}/reward_list.jpg")
+                    )
+                    self.plot_running_avg(
+                        self.ep_loss, Path(f"models/{name}/ep_loss.jpg")
                     )
 
 

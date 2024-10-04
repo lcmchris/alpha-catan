@@ -589,7 +589,10 @@ class Player:
         """
         Returns a list of tuples of the form (y, x) of all potential settlements
         """
-        if len(self.settlements) < 2:
+        if len(self.settlements) >= self.catan.max_properties["settlements"]:
+            return []
+
+        if len(self.settlements + self.cities) < 2:
             # All empty spaces are potential settlements at the start of the game
             return_list = arr_to_tuple(np.argwhere(self.catan.board == -1))
         else:
@@ -630,6 +633,9 @@ class Player:
         return return_list
 
     def get_potential_road(self, coords=None):
+        if len(self.roads) >= self.catan.max_properties["roads"]:
+            return []
+
         # This only applies to the start of the game where the road has to link to a settlement or city
         act_settlements = (
             [coords]
@@ -683,6 +689,9 @@ class Player:
         return return_list_road
 
     def get_potential_city(self):
+        if len(self.cities) >= self.catan.max_properties["cities"]:
+            return []
+
         return self.settlements
 
     def find_robber(self):
@@ -724,23 +733,24 @@ class Player:
         logging.debug(f"Points: {self.points}")
 
     def player_episode_audit(self):
-        logging.debug(f"<-- Player {self.tag} -->")
+        logging.info(f"<-- Player {self.tag} -->")
 
         unique_actions = Counter(self.actions_taken)
-        logging.debug(
+        logging.info(
             f"Actions taken: {dict(zip(unique_actions.keys(), unique_actions.values()))}"
         )
-        logging.debug(f"Settlements : {self.settlements}")
-        logging.debug(f"City : {self.cities}")
-        logging.debug(f"Roads : {self.roads}")
-        logging.debug(f"Dev cards : {self.dev_cards}")
-        logging.debug(f"Longest road: {self.is_longest_road} {self.longest_road}")
-        logging.debug(f"Largest army: {self.is_largest_army} {self.largest_army}")
+        logging.info(f"Settlements : {self.settlements}")
+        logging.info(f"City : {self.cities}")
+        logging.info(f"Roads : {self.roads}")
+        logging.info(f"Dev cards : {self.dev_cards}")
+        logging.info(f"Longest road: {self.is_longest_road} {self.longest_road}")
+        logging.info(f"Largest army: {self.is_largest_army} {self.largest_army}")
 
-        logging.debug(f"End Resources: {self.resources}")
-        self.reward_sum = round(np.sum(np.vstack(self.r_s)))
-        logging.debug(f"Reward sum: {self.reward_sum}")
-        logging.debug(f"Points: {self.points} ")
+        logging.info(f"End Resources: {self.resources}")
+
+        self.reward_sum = np.sum(np.vstack(self.r_s))
+        logging.info(f"Reward sum: {self.reward_sum}")
+        logging.info(f"Points: {self.points} ")
 
 
 class Catan:
