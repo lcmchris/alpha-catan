@@ -8,6 +8,7 @@ import logging
 from enum import Enum
 from catan_game import Player, Catan, Action
 from collections import OrderedDict
+from typing import Literal
 
 
 class PlayerType(Enum):
@@ -393,6 +394,9 @@ class CatanAITraining:
     max_turn = 350
     player_type = [PlayerType.MODEL, PlayerType.MODEL]  # model | random
     player_count = 2  # 1 - 4
+
+    training_style: Literal["normal", "evo"] = "evo"
+
     # Stacking
     running_reward = None
     turn_list = []
@@ -449,9 +453,7 @@ class CatanAITraining:
             for player_tag in self.catan.players
         }  # update buffers that add up gradients over a batch
         self.rmsprop_cache = {
-            (player_tag, k): np.zeros_like(v)
-            for k, v in self.model.items()
-            for player_tag in self.catan.players
+            k: np.zeros_like(v) for k, v in self.model.items()
         }  # rmsprop memory
 
         self.reward_list_player = {player_tag: [] for player_tag in self.catan.players}
@@ -605,7 +607,6 @@ class CatanAITraining:
                 for player_tag, player in self.catan.players.items():
                     # stack together all inputs, hidden states, action gradients, and rewards for this episode
 
-                    self.reward_list_player[player_tag].append(player.reward_sum)
                     ep_x_s = np.vstack(player.x_s)
                     ep_z1_s = np.vstack(player.z1_s)
                     ep_a1_s = np.vstack(player.a1_s)
@@ -616,7 +617,8 @@ class CatanAITraining:
                     ep_y_s = np.vstack(player.y_s)
                     ep_r_s = np.vstack(player.r_s)
 
-                    avg_ep_loss = (ep_a3_s - ep_y_s) / len(ep_y_s)
+                    self.reward_list_player[player_tag].append(player.reward_sum)
+                    avg_ep_loss = abs(ep_a3_s - ep_y_s) / len(ep_y_s)
                     self.ep_loss.append(avg_ep_loss.sum())
 
                     grad = self.policy_backward(
@@ -647,24 +649,33 @@ class CatanAITraining:
                     self.reward_list = (
                         self.reward_list + self.reward_list_player[winner]
                     )
+
                     for k, v in self.model.items():
-                        g = self.grad_buffer[(winner, k)]  # gradient
-                        self.rmsprop_cache[(winner, k)] = (
-                            self.decay_rate * self.rmsprop_cache[(winner, k)]
-                            + (1 - self.decay_rate) * g**2
-                        )
-                        self.model[k] -= (
-                            self.learning_rate
-                            * g
-                            / (np.sqrt(self.rmsprop_cache[(winner, k)]) + 1e-7)
-                        )
-                        for player in self.catan.players:
+                        if self.training_style == "evo":
+                            trained_on = [winner]
+                        elif self.training_style == "normal":
+                            trained_on = self.catan.players
+
+                        for player_tag in trained_on:
+                            g = self.grad_buffer[(player_tag, k)]  # gradient
+
+                            self.rmsprop_cache[k] = (
+                                self.decay_rate * self.rmsprop_cache[k]
+                                + (1 - self.decay_rate) * g**2
+                            )
+                            self.model[k] -= (
+                                self.learning_rate
+                                * g
+                                / (np.sqrt(self.rmsprop_cache[k]) + 1e-7)
+                            )
                             self.grad_buffer[(player, k)] = np.zeros_like(
                                 v
                             )  # reset batch gradient buffer
+                            self.reward_list_player[player] = []
 
                 # save model
-                if episode % 100 == 0 and episode != 0:
+                window = 100
+                if episode % window == 0 and episode != 0:
                     Path.open(f"models/{name}/catan_model.pickle", "wb")
                     pickle.dump(
                         self.model, Path.open(f"models/{name}/catan_model.pickle", "wb")
@@ -679,13 +690,13 @@ class CatanAITraining:
                     )
 
                     self.plot_running_avg(
-                        self.turn_list, Path(f"models/{name}/turn_list.jpg")
+                        self.turn_list, Path(f"models/{name}/turn_list.jpg"), window
                     )
                     self.plot_running_avg(
-                        self.reward_list, Path(f"models/{name}/reward_list.jpg")
+                        self.reward_list, Path(f"models/{name}/reward_list.jpg"), window
                     )
                     self.plot_running_avg(
-                        self.ep_loss, Path(f"models/{name}/ep_loss.jpg")
+                        self.ep_loss, Path(f"models/{name}/ep_loss.jpg"), window
                     )
 
 
