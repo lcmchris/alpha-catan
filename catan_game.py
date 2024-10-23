@@ -92,6 +92,8 @@ class Player:
         self.potential_settlement = []
         self.potential_road = []
         self.potential_trade = []
+
+        self.previous_points = 0
         self.points = 0
         self.longest_road = 0
         self.is_longest_road = False

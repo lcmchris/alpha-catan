@@ -129,8 +129,7 @@ dmypy.json
 .pyre/
 
 # Log file
-catan_game.txt
 *.pickle
 state.json
-*.txt
 *.png
+archive/*

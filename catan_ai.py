@@ -9,6 +9,14 @@ from enum import Enum
 from catan_game import Player, Catan, Action
 from collections import OrderedDict
 from typing import Literal
+from math import ceil
+
+
+class Rewards(str, Enum):
+    WIN = "win"
+    LOSS = "loss"
+    DRAW = "draw"
+    POINTSINC = "pointsinc"
 
 
 class PlayerType(Enum):
@@ -54,7 +62,10 @@ class PlayerAI(Player):
     def recalc_points(self):
         super().recalc_points()
 
-        logging.debug(f"Player {self.tag} wins!")
+        # if points increased
+        if self.points > self.previous_points:
+            self.r_s[-1] += self.reward_matrix(Rewards.POINTSINC)
+            self.previous_points = self.points
 
     def discard_resources_turn(self):
         if sum(self.resources.values()) > 7:
@@ -153,15 +164,15 @@ class PlayerAI(Player):
             self.a3_s.append(a3)
 
             # # # Rebalance and make pass more possible. Pass is less likely as it is one option.
-            # # increase_prob = 4
-            # probs_a3 = a3.copy()
-            # # probs_a3[0] = probs_a3[0] * increase_prob
-            # # probs_a3 = probs_a3 / sum(probs_a3)
+            increase_prob = ceil(len(np.where(self.action_space > 0)[0]) / 10)
 
-            # # choose a random action based on the action probabilities returned.
-            # action_idx = np.random.choice(np.arange(a3.size), p=probs_a3)
+            probs_a3 = a3.copy()
+            probs_a3[0] = probs_a3[0] * increase_prob
+            probs_a3 = probs_a3 / sum(probs_a3)
 
-            action_idx = np.random.choice(np.arange(a3.size), p=a3)
+            # choose a random action based on the action probabilities returned.
+            action_idx = np.random.choice(np.arange(a3.size), p=probs_a3)
+
             # Promote the action taken (which will be adjusted by the reward)
             y = np.zeros(len(self.catan.base_action_space))
             y[action_idx] = 1
@@ -170,14 +181,17 @@ class PlayerAI(Player):
             action, attributes = self.action_idx_to_action_tuple(action_idx)
             self.actions_taken.append(action)
 
-            self.r_s.append(0)
+            self.r_s.append(self.reward_matrix(action))
 
             return action, attributes
 
-    def reward_matrix(self, action: str) -> int:
+    def reward_matrix(self, action: Rewards | Action) -> int:
         # """Scaling reward by points and winning"""
+        reward = self.reward_matrix_dict.get(action, 0)
+        if reward > 0:
+            logging.info(f"Rewarding ... {reward} for {action} to {self.tag} ")
 
-        return self.reward_matrix_dict[action]
+        return self.reward_matrix_dict.get(action, 0)
 
     def player_turn(self):
         action = None
@@ -193,6 +207,8 @@ class PlayerAI(Player):
         logging.debug(f"Action: {action}, Attributes: {attributes}")
         self.perform_action(action, attributes)
         self.player_turn_action_list.append(action)
+
+        self.recalc_points()
         return action
 
     def player_start(self):
@@ -385,17 +401,17 @@ class CatanAITraining:
     # Hyperparameters
 
     H = 256  # number of hidden layer 1 neurons
-    W = 256  # number of hidden layer 2 neurons
-    batch_size = 10  # every how many episodes to do a param update?
+    W = 512  # number of hidden layer 2 neurons
+    batch_size = 25  # every how many episodes to do a param update?
     episodes = 100000
-    learning_rate = 1e-4
+    learning_rate = 1e-5
     gamma = 0.95  # discount factor for reward
     decay_rate = 0.95  # decay factor for RMSProp leaky sum of grad^2
     max_turn = 350
     player_type = [PlayerType.MODEL, PlayerType.MODEL]  # model | random
     player_count = 2  # 1 - 4
 
-    training_style: Literal["normal", "evo"] = "evo"
+    training_style: Literal["normal", "evo"] = "normal"
 
     # Stacking
     running_reward = None
@@ -403,13 +419,43 @@ class CatanAITraining:
     reward_list = []
     ep_loss = []
     reward_matrices = {
-        # "win_10": {"win": 10, "loss": 0},
-        # "win_10_loss_10": {"win": 10, "loss": -10},
-        # "win_50": {"win": 50, "loss": 0},
-        # "win_50_loss_10": {"win": 50, "loss": -10},
-        # "win_100": {"win": 100, "loss": 0},
-        "test4": {"win": 100, "loss": -100, "draw": -25},
-        # "win_100_loss_100_big": {"win": 100, "loss": -100},
+        # "win_10": {Rewards.WIN: 10, Rewards.LOSS: 0},
+        # "win_10_loss_10": {Rewards.WIN: 10, Rewards.LOSS: -10},
+        # "win_50": {Rewards.WIN: 50, Rewards.LOSS: 0},
+        # "win_50_loss_10": {Rewards.WIN: 50, Rewards.LOSS: -10},
+        # "win_100": {Rewards.WIN: 100, Rewards.LOSS: 0},
+        # "win_100_loss_100_big": {Rewards.WIN: 100, Rewards.LOSS: -100},
+        "PointsEXTRA": {
+            Rewards.POINTSINC: 10,
+        },
+        # "WinLossPoints": {
+        #     Rewards.WIN: 50,
+        #     Rewards.LOSS: -50,
+        #     Rewards.POINTSINC: 10,
+        # },
+        # "CitySettlement": {
+        #     Rewards.WIN: 100,
+        #     Rewards.LOSS: -100,
+        #     Rewards.DRAW: -50,
+        #     Action.CITY: 20,
+        #     Action.SETTLEMENT: 10,
+        # },
+        # "CitySettlementRoad": {
+        #     Rewards.WIN: 100,
+        #     Rewards.LOSS: -100,
+        #     Rewards.DRAW: -25,
+        #     Action.SETTLEMENT: 5,
+        #     Action.ROAD: 2,
+        # },
+        # "CitySettlementRoadPoints": {
+        #     Rewards.WIN: 50,
+        #     Rewards.LOSS: -30,
+        #     Rewards.DRAW: -10,
+        #     Action.CITY: 7,
+        #     Action.SETTLEMENT: 3,
+        #     Action.ROAD: 2,
+        #     Rewards.POINTSINC: 2,
+        # },
     }
 
     def __init__(self):
@@ -537,7 +583,6 @@ class CatanAITraining:
                 # Phase 2: player performs actions
                 player.player_preturn_debug()
                 player.player_turn()
-                player.recalc_points()
                 player.player_posturn_debug()
 
     def training(self):
@@ -552,10 +597,21 @@ class CatanAITraining:
                 filemode="w",
                 force=True,
             )
+            with Path.open(f"models/{name}/setup.txt", "w") as f:
+                print(f"{self.H=}", file=f)
+                print(f"{self.W=}", file=f)
+                print(f"{self.batch_size=}", file=f)
+                print(f"{self.episodes=}", file=f)
+                print(f"{self.learning_rate=}", file=f)
+                print(f"{self.gamma=}", file=f)
+                print(f"{self.decay_rate=}", file=f)
+                print(f"{self.max_turn=}", file=f)
+                print(f"{self.reward_matrices=}", file=f)
+
             for episode in range(self.episodes):
                 logging.info(f"Episode {episode}")
                 self.catan = CatanAI(
-                    seed=episode,
+                    seed=episode,  # same initial board state on each batch
                     player_type=self.player_type,
                     player_matrices=[matrix, matrix],
                     player_count=self.player_count,
@@ -575,7 +631,6 @@ class CatanAITraining:
                         # Phase 2: player performs actions
                         player.player_preturn_debug()
                         player.player_turn()
-                        player.recalc_points()
                         player.player_posturn_debug()
 
                 logging.info("End board state:")
@@ -588,13 +643,13 @@ class CatanAITraining:
                 for player_tag, player in self.catan.players.items():
                     if self.catan.turn != self.max_turn:
                         if player.points != max_points:
-                            player.r_s[-1] += player.reward_matrix("loss")
+                            player.r_s[-1] += player.reward_matrix(Rewards.LOSS)
                             player.winner = False
                         elif player.points == max_points:
-                            player.r_s[-1] += player.reward_matrix("win")
+                            player.r_s[-1] += player.reward_matrix(Rewards.WIN)
                             player.winner = True
                     else:
-                        player.r_s[-1] += player.reward_matrix("draw")
+                        player.r_s[-1] += player.reward_matrix(Rewards.DRAW)
                         player.winner = False
 
                     player.player_episode_audit()
@@ -641,7 +696,7 @@ class CatanAITraining:
                         self.winning_count[player_tag] += 1
                 # perform rmsprop parameter update every batch_size episodes
                 if episode != 0 and episode % self.batch_size == 0:
-                    last_count = 0
+                    last_count = -1
                     for player, count in self.winning_count.items():
                         if count > last_count:
                             winner = player

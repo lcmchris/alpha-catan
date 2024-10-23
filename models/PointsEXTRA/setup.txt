@@ -1,0 +1,9 @@
+self.H=256
+self.W=512
+self.batch_size=25
+self.episodes=100000
+self.learning_rate=1e-05
+self.gamma=0.95
+self.decay_rate=0.95
+self.max_turn=350
+self.reward_matrices={'PointsEXTRA': {<Rewards.POINTSINC: 'pointsinc'>: 10}}

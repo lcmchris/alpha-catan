@@ -21,7 +21,7 @@ class ColonistIOAutomator(Catan):
     """
 
     def __init__(self, model_path: str) -> None:
-        super().__init__()
+        super().__init__(seed=1)
         self.selection_spacing = 45
         self.starting_coords = [85, 85]
         self.x_spacing = 53.75
@@ -1047,4 +1047,4 @@ if __name__ == "__main__":
         filename="running.txt",
         filemode="w",
     )
-    colonistUI = ColonistIOAutomator(model_path="models/test3/catan_model.pickle")
+    colonistUI = ColonistIOAutomator(model_path="models/Points/catan_model.pickle")

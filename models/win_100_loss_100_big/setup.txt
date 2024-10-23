@@ -1,0 +1,9 @@
+self.H=256
+self.W=512
+self.batch_size=50
+self.episodes=1000
+self.learning_rate=0.0001
+self.gamma=0.95
+self.decay_rate=0.95
+self.max_turn=350
+self.reward_matrices={'win_10': {<Rewards.WIN: 'win'>: 10, <Rewards.LOSS: 'loss'>: 0}, 'win_10_loss_10': {<Rewards.WIN: 'win'>: 10, <Rewards.LOSS: 'loss'>: -10}, 'win_50': {<Rewards.WIN: 'win'>: 50, <Rewards.LOSS: 'loss'>: 0}, 'win_50_loss_10': {<Rewards.WIN: 'win'>: 50, <Rewards.LOSS: 'loss'>: -10}, 'win_100': {<Rewards.WIN: 'win'>: 100, <Rewards.LOSS: 'loss'>: 0}, 'win_100_loss_100_big': {<Rewards.WIN: 'win'>: 100, <Rewards.LOSS: 'loss'>: -100}, 'Points': {<Rewards.POINTSINC: 'pointsinc'>: 10}, 'WinLossPoints': {<Rewards.WIN: 'win'>: 50, <Rewards.LOSS: 'loss'>: -50, <Rewards.POINTSINC: 'pointsinc'>: 10}, 'CitySettlement': {<Rewards.WIN: 'win'>: 100, <Rewards.LOSS: 'loss'>: -100, <Rewards.DRAW: 'draw'>: -50, <Action.CITY: 3>: 20, <Action.SETTLEMENT: 2>: 10}, 'CitySettlementRoad': {<Rewards.WIN: 'win'>: 100, <Rewards.LOSS: 'loss'>: -100, <Rewards.DRAW: 'draw'>: -25, <Action.SETTLEMENT: 2>: 5, <Action.ROAD: 1>: 2}, 'CitySettlementRoadPoints': {<Rewards.WIN: 'win'>: 50, <Rewards.LOSS: 'loss'>: -30, <Rewards.DRAW: 'draw'>: -10, <Action.CITY: 3>: 7, <Action.SETTLEMENT: 2>: 3, <Action.ROAD: 1>: 2, <Rewards.POINTSINC: 'pointsinc'>: 2}}
